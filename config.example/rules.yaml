@@ -1,0 +1,93 @@
+# Treinvertraging compensation rules ("geld terug bij vertraging").
+# Copy to /config/rules.yaml (mounted volume). If that file is missing, the copy bundled with
+# the package (treinvertraging/defaults/rules.yaml, identical to this file) is used.
+#
+# !!! Every number below is based on public sources as of 2026-10 and is TO VERIFY on
+# !!! https://www.ns.nl (search "geld terug bij vertraging") during milestone M6 (calibration).
+# !!! Nothing here is hard-coded in the application: fix the numbers here, no rebuild needed.
+
+# Claims must be filed within this many calendar months after the check-in date.
+# Deadline = check-in date + deadline_months (same day-of-month; clamped for short months).
+# TO VERIFY on ns.nl.
+deadline_months: 3
+
+# Expected payouts below this amount (EUR) are not paid by NS, so such trips are not claimed.
+# TO VERIFY on ns.nl.
+min_payout_eur: 2.20
+
+# Without a check-out NS cannot establish where the journey ended, so such trips are ineligible.
+# Set to false to still claim trips that have no check-out.
+require_checkout: true
+
+# A cancelled final leg counts as at least this many minutes of delay.
+# TO VERIFY on ns.nl (treated as the highest tier, i.e. 100%).
+cancelled_counts_as_min: 60
+
+# When NS itself flags a trip as delayed but there is no independent delay data, trust NS and
+# assume the LOWEST tier of the profile (conservative).
+trust_ns_flag_without_data: true
+
+# Delay tiers per profile: the highest tier whose `min` (minutes late at the final destination)
+# is reached applies; `pct` is the percentage of the single fare that is refunded.
+# TO VERIFY on ns.nl: >=30 min -> 50%, >=60 min -> 100% (domestic NS).
+thresholds:
+  ns_domestic:
+    - { min: 30, pct: 50 }
+    - { min: 60, pct: 100 }
+
+# Profile used when no operator/product mapping below applies.
+default_profile: ns_domestic
+
+# Map an operator (case-insensitive, as reported by the source; null/empty counts as NS) to a profile.
+operator_profiles:
+  NS: ns_domestic
+  NS Internationaal: ns_domestic
+
+# Optional: map a product name (case-insensitive substring of TripDTO.product) to a profile.
+# Takes precedence over operator_profiles.
+product_profiles: {}
+
+# Operators for which this bot never claims (case-insensitive exact match). Bus/tram/metro and
+# regional/international operators have their own compensation schemes (out of scope for now).
+operators_excluded:
+  - Arriva
+  - Keolis
+  - Qbuzz
+  - Transdev
+  - Breng
+  - Blauwnet
+  - R-net
+  - Eurobahn
+  - Syntus
+  - Connexxion
+  - EBS
+  - U-OV
+  - GVB
+  - RET
+  - HTM
+  - Deutsche Bahn
+  - DB
+  - SNCB
+  - NMBS
+  - Thalys
+  - Eurostar
+  - Flixtrain
+
+# Subscription holders (Altijd Vrij, Traject Vrij, ...) are compensated differently: a percentage
+# of a monthly amount instead of a percentage of a single fare. Disabled by default because the
+# numbers below are PLACEHOLDERS: fill in the real ones from ns.nl before enabling.
+# When disabled, trips on a subscription product are assessed like any other trip (their
+# fare is usually unknown, so they are eligible with an expected amount of 0).
+subscription_products:
+  enabled: false
+  products:
+    - match: Altijd Vrij            # case-insensitive substring of TripDTO.product
+      monthly_amount_eur: null      # PLACEHOLDER (TO VERIFY): monthly price the percentage applies to
+      thresholds:                   # PLACEHOLDER (TO VERIFY): pct = % of monthly_amount_eur
+        - { min: 30, pct: 0 }
+        - { min: 60, pct: 0 }
+    - match: Traject Vrij
+      monthly_amount_eur: null
+      thresholds:
+        - { min: 30, pct: 0 }
+        - { min: 60, pct: 0 }

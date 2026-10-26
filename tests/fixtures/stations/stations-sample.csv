@@ -1,0 +1,32 @@
+id,code,uic,name_short,name_medium,name_long,slug,country,type,geo_lat,geo_lng
+266,HT,8400319,"Den Bosch",'s-Hertogenbosch,'s-Hertogenbosch,s-hertogenbosch,NL,knooppuntIntercitystation,51.69048,5.29362
+269,HTO,8400320,"Dn Bosch O","'s-Hertogenb. O.","'s-Hertogenbosch Oost",s-hertogenbosch-oost,NL,stoptreinstation,51.700553894043,5.3183331489563
+8,AHBF,8015345,Aachen,"Aachen Hbf","Aachen Hbf",aachen-hbf,D,knooppuntIntercitystation,50.7678,6.091499
+23,AMF,8400055,"Amersfrt C","Amersfoort C.","Amersfoort Centraal",amersfoort-centraal,NL,knooppuntIntercitystation,52.153888702393,5.3705554008484
+40,ASA,8400057,Amstel,Amstel,"Amsterdam Amstel",amsterdam-amstel,NL,intercitystation,52.346668243408,4.9177780151367
+41,ASB,8400074,"Bijlmer A","Bijlmer ArenA","Amsterdam Bijlmer ArenA",amsterdam-bijlmer-arena,NL,knooppuntStoptreinstation,52.3122215271,4.9469442367554
+43,ASD,8400058,"Amsterdm C","Amsterdam C.","Amsterdam Centraal",amsterdam-centraal,NL,megastation,52.378887176514,4.9002776145935
+50,ASS,8400059,Sloterdijk,Sloterdijk,"Amsterdam Sloterdijk",amsterdam-sloterdijk,NL,knooppuntIntercitystation,52.388889312744,4.8377776145935
+46,ASDZ,8400061,"Amsterdm Z","Amsterdam Zuid","Amsterdam Zuid",amsterdam-zuid,NL,intercitystation,52.338889,4.872356
+61,BD,8400131,Breda,Breda,Breda,breda,NL,knooppuntIntercitystation,51.595554351807,4.7800002098083
+65,BDPB,8400132,Prinsenbk,Prinsenbeek,Breda-Prinsenbeek,breda-prinsenbeek,NL,stoptreinstation,51.606388092041,4.7208333015442
+105,BRUSZ,8814001,Brussel-Z,"Brussel-Z. Midi","Brussel-Zuid Midi",brussel-zuid-midi,B,megastation,50.836782,4.336922
+214,GVC,8400282,"Den Haag C","Den Haag C.","Den Haag Centraal",den-haag-centraal,NL,megastation,52.080276489258,4.3249998092651
+213,GV,8400280,"Dn Haag HS","Den Haag HS","Den Haag HS",den-haag-hs,NL,knooppuntIntercitystation,52.069721221924,4.3225002288818
+124,DDR,8400180,Dordrecht,Dordrecht,Dordrecht,dordrecht,NL,knooppuntIntercitystation,51.807220458984,4.668333530426
+163,EDC,8400201,"Ede C","Ede C.","Ede Centrum",ede-centrum,NL,stoptreinstation,52.043609619141,5.668333530426
+162,ED,8400200,Ede-Wag,Ede-Wageningen,Ede-Wageningen,ede-wageningen,NL,knooppuntIntercitystation,52.027778625488,5.6730556488037
+168,EHV,8400206,"Eindhovn C","Eindhoven C.","Eindhoven Centraal",eindhoven-centraal,NL,megastation,51.443332672119,5.4813890457153
+784,EHS,8400196,Strijp-S,Strijp-S,"Eindhoven Strijp-S",eindhoven-strijp-s,NL,stoptreinstation,51.451110839844,5.4558334350586
+244,HLM,8400285,Haarlem,Haarlem,Haarlem,haarlem,NL,knooppuntIntercitystation,52.38777923584,4.6383333206177
+308,LEDN,8400390,"Leiden C","Leiden C.","Leiden Centraal",leiden-centraal,NL,knooppuntIntercitystation,52.166110992432,4.4816665649414
+355,NM,8400470,Nijmegen,Nijmegen,Nijmegen,nijmegen,NL,knooppuntIntercitystation,51.843612670898,5.8522224426269
+356,NMD,8400475,Dukenburg,Dukenburg,"Nijmegen Dukenburg",nijmegen-dukenburg,NL,stoptreinstation,51.824165344238,5.7955555915833
+410,RTB,8400529,Blaak,Blaak,"Rotterdam Blaak",rotterdam-blaak,NL,stoptreinstation,51.920276641846,4.4888887405395
+411,RTD,8400530,"Rotterdm C","Rotterdam C.","Rotterdam Centraal",rotterdam-centraal,NL,megastation,51.92499923706,4.468888759613
+428,SHL,8400561,Schiphol,"Schiphol Airport","Schiphol Airport",schiphol-airport,NL,megastation,52.30944442749,4.7619442939758
+467,UT,8400621,"Utrecht C","Utrecht C.","Utrecht Centraal",utrecht-centraal,NL,megastation,52.088890075684,5.1102776527405
+718,UTLR,8400607,LeidscheRn,"Leidsche Rijn","Utrecht Leidsche Rijn",utrecht-leidsche-rijn,NL,stoptreinstation,52.09896,5.06523
+471,UTO,8400620,Overvecht,Overvecht,"Utrecht Overvecht",utrecht-overvecht,NL,knooppuntStoptreinstation,52.110000610352,5.1247220039368
+473,UTZL,8400613,Zuilen,Zuilen,"Utrecht Zuilen",utrecht-zuilen,NL,stoptreinstation,52.103055,5.09
+532,ZL,8400747,Zwolle,Zwolle,Zwolle,zwolle,NL,knooppuntIntercitystation,52.504722595215,6.0919442176819
