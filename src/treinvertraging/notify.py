@@ -166,7 +166,10 @@ def build_digest(session: Session, *, since: datetime | None = None, now: dateti
     soon = _deadline_warnings(session, today=now.date())
     if soon:
         lines += ["", "Deadlines binnen 14 dagen:"]
-        lines += [f"- {t.checkin_at:%d-%m} {t.from_station}→{t.to_station or '?'}: uiterlijk {d:%d-%m-%Y}" for t, d in soon]
+        lines += [
+            f"- {t.checkin_at:%d-%m} {t.from_station}→{t.to_station or '?'}: uiterlijk {d:%d-%m-%Y}"
+            for t, d in soon
+        ]
 
     return "\n".join(lines)
 

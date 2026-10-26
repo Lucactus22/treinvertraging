@@ -11,7 +11,17 @@ from treinvertraging.web.app import create_app
 
 pytest_plugins = ["tests.unit.test_web_support"]
 
-PROTECTED = ["/", "/trips", "/claims", "/accounts", "/accounts/new", "/run", "/otp", "/debug/", "/static/style.css"]
+PROTECTED = [
+    "/",
+    "/trips",
+    "/claims",
+    "/accounts",
+    "/accounts/new",
+    "/run",
+    "/otp",
+    "/debug/",
+    "/static/style.css",
+]
 
 
 def test_healthz_is_public(anon_client: TestClient) -> None:
@@ -49,9 +59,7 @@ def test_cross_origin_post_blocked(client: TestClient) -> None:
     assert ok.status_code == 303
 
 
-def test_refuses_to_start_without_password(
-    web_env, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_refuses_to_start_without_password(web_env, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("WEB_PASSWORD", "")
     config.reset_settings_cache()
     with pytest.raises(RuntimeError, match="WEB_PASSWORD"):

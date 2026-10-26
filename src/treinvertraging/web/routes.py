@@ -46,7 +46,9 @@ RUN_ACTIONS: dict[str, tuple[str, str]] = {
 _basic = HTTPBasic(auto_error=False)
 
 
-def require_auth(request: Request, credentials: Annotated[HTTPBasicCredentials | None, Depends(_basic)]) -> None:
+def require_auth(
+    request: Request, credentials: Annotated[HTTPBasicCredentials | None, Depends(_basic)]
+) -> None:
     """HTTP Basic auth plus a same-origin check on state-changing requests."""
     if request.method not in ("GET", "HEAD", "OPTIONS"):
         origin = request.headers.get("origin")
@@ -570,9 +572,17 @@ async def account_create(
     enabled: Annotated[str | None, Form()] = None,
 ) -> Response:
     values = dict(
-        source=source, label=label, username=username, password=password, card_number=card_number,
-        iban=iban, holder_name=holder_name, email=email, otp_provider=otp_provider, enabled=enabled is not None,
-    )  # fmt: skip
+        source=source,
+        label=label,
+        username=username,
+        password=password,
+        card_number=card_number,
+        iban=iban,
+        holder_name=holder_name,
+        email=email,
+        otp_provider=otp_provider,
+        enabled=enabled is not None,
+    )
     return await _account_post(request, db, None, values)
 
 
@@ -596,9 +606,17 @@ async def account_update(
     if acc is None:
         raise HTTPException(404, "Account niet gevonden")
     values = dict(
-        source=source, label=label, username=username, password=password, card_number=card_number,
-        iban=iban, holder_name=holder_name, email=email, otp_provider=otp_provider, enabled=enabled is not None,
-    )  # fmt: skip
+        source=source,
+        label=label,
+        username=username,
+        password=password,
+        card_number=card_number,
+        iban=iban,
+        holder_name=holder_name,
+        email=email,
+        otp_provider=otp_provider,
+        enabled=enabled is not None,
+    )
     return await _account_post(request, db, acc, values)
 
 
@@ -649,9 +667,13 @@ async def imap_settings(
         except re.error:
             return respond(request, "error", "Ongeldige reguliere expressie voor de code.", "/accounts")
     for key, value in (
-        ("host", host), ("port", port), ("user", user), ("folder", folder),
-        ("senders", senders), ("code_regex", code_regex),
-    ):  # fmt: skip
+        ("host", host),
+        ("port", port),
+        ("user", user),
+        ("folder", folder),
+        ("senders", senders),
+        ("code_regex", code_regex),
+    ):
         queries.kv_set(db, f"imap.{key}", value.strip())
     if password:
         queries.kv_set(db, "imap.password_enc", crypto.encrypt(password))

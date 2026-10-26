@@ -73,8 +73,12 @@ def dashboard_stats(session: Session, *, today: date | None = None) -> Dashboard
     today = today or datetime.now(UTC).date()
     stats = DashboardStats()
     rows = session.execute(
-        select(Claim.state, func.count(), func.coalesce(func.sum(Claim.expected_eur), 0),
-               func.coalesce(func.sum(Claim.paid_eur), 0)).group_by(Claim.state)
+        select(
+            Claim.state,
+            func.count(),
+            func.coalesce(func.sum(Claim.expected_eur), 0),
+            func.coalesce(func.sum(Claim.paid_eur), 0),
+        ).group_by(Claim.state)
     ).all()
     for state, count, expected, paid in rows:
         stats.counts[state] = count
