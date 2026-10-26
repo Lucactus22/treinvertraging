@@ -10,7 +10,7 @@ import re
 import secrets
 from collections.abc import Awaitable, Callable
 from pathlib import Path
-from typing import Any
+from typing import Annotated, Any
 from urllib.parse import urlencode, urlsplit
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
@@ -46,7 +46,7 @@ RUN_ACTIONS: dict[str, tuple[str, str]] = {
 _basic = HTTPBasic(auto_error=False)
 
 
-def require_auth(request: Request, credentials: HTTPBasicCredentials | None = Depends(_basic)) -> None:
+def require_auth(request: Request, credentials: Annotated[HTTPBasicCredentials | None, Depends(_basic)]) -> None:
     """HTTP Basic auth plus a same-origin check on state-changing requests."""
     if request.method not in ("GET", "HEAD", "OPTIONS"):
         origin = request.headers.get("origin")
@@ -83,6 +83,7 @@ def get_db():
         session.close()
 
 
+DbDep = Annotated[Session, Depends(get_db)]
 router = APIRouter(dependencies=[Depends(require_auth)])
 
 
@@ -215,7 +216,7 @@ def novnc_url() -> str:
 
 
 @router.get("/")
-async def dashboard(request: Request, db: Session = Depends(get_db)) -> Response:
+async def dashboard(request: Request, db: DbDep) -> Response:
     stats = queries.dashboard_stats(db)
     try:
         runs: list[dict] | None = await services.next_runs()
@@ -271,7 +272,7 @@ async def otp_page(request: Request) -> Response:
 
 
 @router.post("/otp/{prompt_id}")
-async def otp_submit(request: Request, prompt_id: str, code: str = Form("")) -> Response:
+async def otp_submit(request: Request, prompt_id: str, code: Annotated[str, Form()] = "") -> Response:
     code = code.strip()
     if not code:
         return respond(request, "error", "Vul een code in.", "/otp")
@@ -294,7 +295,7 @@ async def otp_submit(request: Request, prompt_id: str, code: str = Form("")) -> 
 
 
 @router.get("/trips")
-def trips_page(request: Request, filter: str = "all", db: Session = Depends(get_db)) -> Response:
+def trips_page(request: Request, db: DbDep, filter: str = "all") -> Response:
     if filter not in queries.TRIP_FILTERS:
         filter = "all"
     return render(
@@ -308,7 +309,7 @@ def trips_page(request: Request, filter: str = "all", db: Session = Depends(get_
 
 
 @router.get("/claims")
-def claims_page(request: Request, db: Session = Depends(get_db)) -> Response:
+def claims_page(request: Request, db: DbDep) -> Response:
     claims = queries.list_claims(db)
     items = [
         {
@@ -398,7 +399,7 @@ def _blank_form() -> dict[str, Any]:
 
 
 @router.get("/accounts")
-def accounts_page(request: Request, db: Session = Depends(get_db)) -> Response:
+def accounts_page(request: Request, db: DbDep) -> Response:
     imap = queries.kv_get_all(db, "imap.")
     return render(
         request,
@@ -414,12 +415,18 @@ def accounts_page(request: Request, db: Session = Depends(get_db)) -> Response:
 @router.get("/accounts/new")
 def account_new(request: Request) -> Response:
     return render(
-        request, "account_form.html", account=None, form=_blank_form(), errors=[], card_hint=None, iban_hint=None
+        request,
+        "account_form.html",
+        account=None,
+        form=_blank_form(),
+        errors=[],
+        card_hint=None,
+        iban_hint=None,
     )
 
 
 @router.get("/accounts/{account_id}/edit")
-def account_edit(request: Request, account_id: int, db: Session = Depends(get_db)) -> Response:
+def account_edit(request: Request, account_id: int, db: DbDep) -> Response:
     acc = db.get(Account, account_id)
     if acc is None:
         raise HTTPException(404, "Account niet gevonden")
@@ -518,7 +525,8 @@ async def _account_post(
 ) -> Response:
     v, errors = _apply_account_form(acc, **values)
     if v is None:
-        form = {k: values[k] for k in ("source", "label", "username", "holder_name", "email", "otp_provider", "enabled")}
+        keep = ("source", "label", "username", "holder_name", "email", "otp_provider", "enabled")
+        form = {k: values[k] for k in keep}
         return render(
             request,
             "account_form.html",
@@ -549,17 +557,17 @@ async def _account_post(
 @router.post("/accounts")
 async def account_create(
     request: Request,
-    source: str = Form(""),
-    label: str = Form(""),
-    username: str = Form(""),
-    password: str = Form(""),
-    card_number: str = Form(""),
-    iban: str = Form(""),
-    holder_name: str = Form(""),
-    email: str = Form(""),
-    otp_provider: str = Form("manual"),
-    enabled: str | None = Form(None),
-    db: Session = Depends(get_db),
+    db: DbDep,
+    source: Annotated[str, Form()] = "",
+    label: Annotated[str, Form()] = "",
+    username: Annotated[str, Form()] = "",
+    password: Annotated[str, Form()] = "",
+    card_number: Annotated[str, Form()] = "",
+    iban: Annotated[str, Form()] = "",
+    holder_name: Annotated[str, Form()] = "",
+    email: Annotated[str, Form()] = "",
+    otp_provider: Annotated[str, Form()] = "manual",
+    enabled: Annotated[str | None, Form()] = None,
 ) -> Response:
     values = dict(
         source=source, label=label, username=username, password=password, card_number=card_number,
@@ -572,17 +580,17 @@ async def account_create(
 async def account_update(
     request: Request,
     account_id: int,
-    source: str = Form(""),
-    label: str = Form(""),
-    username: str = Form(""),
-    password: str = Form(""),
-    card_number: str = Form(""),
-    iban: str = Form(""),
-    holder_name: str = Form(""),
-    email: str = Form(""),
-    otp_provider: str = Form("manual"),
-    enabled: str | None = Form(None),
-    db: Session = Depends(get_db),
+    db: DbDep,
+    source: Annotated[str, Form()] = "",
+    label: Annotated[str, Form()] = "",
+    username: Annotated[str, Form()] = "",
+    password: Annotated[str, Form()] = "",
+    card_number: Annotated[str, Form()] = "",
+    iban: Annotated[str, Form()] = "",
+    holder_name: Annotated[str, Form()] = "",
+    email: Annotated[str, Form()] = "",
+    otp_provider: Annotated[str, Form()] = "manual",
+    enabled: Annotated[str | None, Form()] = None,
 ) -> Response:
     acc = db.get(Account, account_id)
     if acc is None:
@@ -595,7 +603,7 @@ async def account_update(
 
 
 @router.post("/accounts/{account_id}/test-login")
-async def account_test_login(request: Request, account_id: int, db: Session = Depends(get_db)) -> Response:
+async def account_test_login(request: Request, account_id: int, db: DbDep) -> Response:
     if db.get(Account, account_id) is None:
         return respond(request, "error", "Account niet gevonden.", "/accounts")
     level, msg = await launch(
@@ -606,7 +614,7 @@ async def account_test_login(request: Request, account_id: int, db: Session = De
 
 @router.post("/accounts/{account_id}/calibrate")
 async def account_calibrate(
-    request: Request, account_id: int, channel: str = Form("ns"), db: Session = Depends(get_db)
+    request: Request, account_id: int, db: DbDep, channel: Annotated[str, Form()] = "ns"
 ) -> Response:
     if channel not in CALIBRATION_CHANNELS:
         return respond(request, "error", "Onbekend kanaal.", "/accounts")
@@ -624,14 +632,14 @@ async def account_calibrate(
 @router.post("/settings/imap")
 async def imap_settings(
     request: Request,
-    host: str = Form(""),
-    port: str = Form("993"),
-    user: str = Form(""),
-    password: str = Form(""),
-    folder: str = Form("INBOX"),
-    senders: str = Form(""),
-    code_regex: str = Form(""),
-    db: Session = Depends(get_db),
+    db: DbDep,
+    host: Annotated[str, Form()] = "",
+    port: Annotated[str, Form()] = "993",
+    user: Annotated[str, Form()] = "",
+    password: Annotated[str, Form()] = "",
+    folder: Annotated[str, Form()] = "INBOX",
+    senders: Annotated[str, Form()] = "",
+    code_regex: Annotated[str, Form()] = "",
 ) -> Response:
     if port.strip() and not port.strip().isdigit():
         return respond(request, "error", "Poort moet een getal zijn.", "/accounts")
@@ -706,25 +714,37 @@ def static_file(name: str) -> Response:
 _TEXT_ONLY = {".html", ".htm", ".xhtml", ".svg", ".xml", ".js", ".mjs"}
 
 
+def _dir_items(directory: Path) -> list[dict[str, Any]]:
+    root = queries.debug_root()
+    if not directory.is_dir():
+        return []
+    # Bundle directories are named by timestamp: newest first at the root, alphabetical inside.
+    entries = sorted(directory.iterdir(), key=lambda p: p.name, reverse=directory == root)
+    prefix = "" if directory == root else directory.relative_to(root).as_posix() + "/"
+    return [
+        {
+            "name": e.name + ("/" if e.is_dir() else ""),
+            "url": f"/debug/{prefix}{e.name}",
+            "image": e.suffix.lower() in queries.IMAGE_SUFFIXES,
+        }
+        for e in entries
+    ]
+
+
 @router.get("/debug/{path:path}")
 def debug_file(request: Request, path: str) -> Response:
+    if not path.strip("/"):  # bundle overview; fine even before the first bundle exists
+        return render(request, "debug_dir.html", rel="", items=_dir_items(queries.debug_root()))
     target = queries.safe_debug_path(path)
     if target is None:
         raise HTTPException(404, "Niet gevonden")
     if target.is_dir():
-        root = queries.debug_root()
-        # Bundle directories are named by timestamp: newest first at the root, alphabetical inside.
-        entries = sorted(target.iterdir(), key=lambda p: p.name, reverse=target == root)
-        rel = "" if target == root else target.relative_to(root).as_posix()
-        items = [
-            {
-                "name": e.name + ("/" if e.is_dir() else ""),
-                "url": f"/debug/{(rel + '/' if rel else '') + e.name}",
-                "image": e.suffix.lower() in queries.IMAGE_SUFFIXES,
-            }
-            for e in entries
-        ]
-        return render(request, "debug_dir.html", rel=rel, items=items)
+        return render(
+            request,
+            "debug_dir.html",
+            rel=target.relative_to(queries.debug_root()).as_posix(),
+            items=_dir_items(target),
+        )
     # Captured pages come from third-party sites: never let the browser execute them here.
     media_type = "text/plain; charset=utf-8" if target.suffix.lower() in _TEXT_ONLY else None
     if media_type is None:
@@ -734,6 +754,8 @@ def debug_file(request: Request, path: str) -> Response:
         media_type=media_type,
         headers={
             "X-Content-Type-Options": "nosniff",
-            "Content-Security-Policy": "sandbox; default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'",
+            "Content-Security-Policy": (
+                "sandbox; default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'"
+            ),
         },
     )

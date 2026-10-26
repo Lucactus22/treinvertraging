@@ -39,7 +39,7 @@ _IBAN_NL = re.compile(r"\bNL\s?\d{2}\s?[A-Z]{4}\s?\d{4}\s?\d{4}\s?\d{2}\b", re.I
 _IBAN_GENERIC = re.compile(r"\b[A-Z]{2}\d{2}(?: ?[A-Z0-9]{4}){3,7}(?: ?[A-Z0-9]{1,3})?\b")
 _CARD = re.compile(r"(?<!\d)(?:\d{4}[ -]?){3}\d{4}(?!\d)")
 _EMAIL = re.compile(r"[A-Za-z0-9._%+\-]+@[A-Za-z0-9\-]+(?:\.[A-Za-z0-9\-]+)*\.[A-Za-z]{2,}")
-_OTP = re.compile(r"(?<![\w.,:/+#\-])\d{6}(?![\w.,:/\-])")
+_OTP = re.compile(r"(?<![\w#+\-])(?<!\d[.,:/])\d{6}(?!\w|[.,]\d|[:/\-])")
 _JSON_SECRET = re.compile(
     r'("(?:password|passwd|wachtwoord|pass|csrfToken|access_token|id_token|refresh_token|secret)"\s*:\s*")[^"]*(")',
     re.IGNORECASE,
