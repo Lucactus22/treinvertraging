@@ -1,0 +1,84 @@
+# Public NS claim form (gtbv-formulier.ns.nl), a Mendix SPA. Used by adapters/gtbv.py.
+#
+# Conventions
+#   * Labels / button names are matched case-insensitively as substrings (Playwright get_by_label,
+#     get_by_role). Prefix a value with "re:" to use a regular expression instead.
+#   * `expect_heading`, `*_regex` keys are always regular expressions (case-insensitive).
+#   * Mendix `name` / `id` attributes are generated per deploy and are NEVER used.
+#
+# VERIFIED (recon 2026-10-26): url, cookie.*, start.*  (step 1 "Vervoerbewijs").
+# UNVERIFIED (best guess, to be fixed in calibration, see PLAN.md M6): everything under `steps:`,
+#   `final_submit_button`, `success_regex`, `reference_regex`, `error_regex`, `blocked_regex`,
+#   `busy_selector`, `challenge_iframe` details and `timeouts`.
+
+url: https://gtbv-formulier.ns.nl/ns/klantenservice-geld-terug-bij-vertraging
+
+# ---- cookie banner (VERIFIED: OneTrust, reject all) -------------------------------------------
+cookie:
+  reject_selectors:
+    - "#onetrust-reject-all-handler"
+  # the role fallback ("Weigeren", ...) lives in browser/human.py
+
+# ---- step 1 "Vervoerbewijs" (VERIFIED) --------------------------------------------------------
+start:
+  radio_label: "OV-chipkaart / NS-Business Card"
+  card_group_label: "Je OV-chipkaartnummer / NS-Business Card"
+  card_prefill: "3528" # first group is prefilled with this
+  next_button: "Naar reisgegevens"
+  # visible text after clicking -> InvalidInput (never retried)
+  error_texts:
+    - "Vul een OV-chipkaartnummer in."
+  error_regex: "ongeldig"
+
+# ---- generic step engine (UNVERIFIED) ---------------------------------------------------------
+# kind: text | date | time | select | autocomplete | radio | checkbox
+# value_from: dotted path into {trip, who, assessment, derived}; `value:` gives a literal instead.
+#   derived.*: checkin_date_nl (dd-mm-yyyy), checkin_date_iso, checkin_time (HH:MM),
+#   checkout_date_nl, checkout_time, from_station_name, to_station_name, from_station_code,
+#   to_station_code, iban_compact, iban_spaced, card_number, today_nl, delay_minutes, fare_eur,
+#   product
+# The step with `final: true` is the review page: after filling it the engine uses
+# `final_submit_button` (and stops before it in dry_run).
+steps:
+  - name: reisgegevens # UNVERIFIED
+    expect_heading: "Reisgegevens"
+    fields:
+      - {label: "Datum van je reis", value_from: derived.checkin_date_nl, kind: date}
+      - {label: "Vertrekstation", value_from: derived.from_station_name, kind: autocomplete}
+      - {label: "Aankomststation", value_from: derived.to_station_name, kind: autocomplete}
+      - {label: "Geplande vertrektijd", value_from: derived.checkin_time, kind: time, optional: true}
+    next_button: "Naar jouw gegevens"
+  - name: gegevens # UNVERIFIED
+    expect_heading: "Jouw gegevens|Gegevens"
+    fields:
+      - {label: "Je IBAN", value_from: derived.iban_compact, kind: text}
+      - {label: "Naam rekeninghouder", value_from: who.holder_name, kind: text}
+      - {label: "E-mailadres", value_from: who.email, kind: text}
+    next_button: "Naar controleren"
+  - name: controle # UNVERIFIED
+    expect_heading: "Controleren|Controle"
+    final: true
+    fields:
+      - {label: "Ik ga akkoord", value: true, kind: checkbox}
+
+# ---- final submit + confirmation (UNVERIFIED) -------------------------------------------------
+final_submit_button: "re:(aanvraag )?(versturen|indienen)|verstuur"
+success_regex: "(bedankt|ontvangen|aanvraag is verstuurd)"
+# group 1 = reference number; must contain a digit
+reference_regex: "(?:referentie ?(?:nummer)?|kenmerk|aanvraagnummer)\\W{0,5}([A-Z0-9-]*\\d[A-Z0-9-]*)"
+
+# ---- generic detection (UNVERIFIED) -----------------------------------------------------------
+error_regex: "ongeldig|niet geldig|onjuist|is verplicht|verplicht veld|Vul een .{1,60} in\\."
+blocked_regex: "access denied|toegang geweigerd|unusual traffic|ongebruikelijk verkeer|verify you are human"
+challenge_iframe: 'iframe[title*="recaptcha challenge" i]'
+busy_selector: ".mx-progress" # Mendix busy overlay; waited until hidden (best effort)
+
+timeouts: # seconds
+  load_s: 45
+  step_s: 25 # wait for the next step heading after clicking "next"
+  field_s: 10 # wait for a field / option to appear
+  success_s: 60 # wait for the confirmation after the final click
+  idle_s: 15 # recorder.wait_idle("/xas/")
+timing:
+  typing_delay_ms: [45, 140]
+  settle_quiet_ms: 500

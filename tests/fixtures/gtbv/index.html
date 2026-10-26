@@ -1,0 +1,203 @@
+<!doctype html>
+<!-- SYNTHETIC: a Mendix-like multi-step claim form for tests (not the real gtbv-formulier.ns.nl).
+     Labels follow src/treinvertraging/defaults/selectors/gtbv.yaml. Server side: see
+     tests/unit/test_adapter_gtbv.py (POST /xas/ with a 300 ms delay, like Mendix).
+     Query params: ?variant=newheading renames the "Reisgegevens" heading. -->
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<title>Geld terug bij vertraging (fake)</title>
+<style>
+  body { font-family: sans-serif; margin: 2rem; max-width: 640px; }
+  .form-group { margin: 1rem 0; }
+  .err { color: #b00020; }
+  .cardgroup input { width: 4.5em; }
+  ul[role=listbox] { list-style: none; margin: 0; padding: 0; border: 1px solid #999; }
+  ul[role=listbox] li { padding: 4px 8px; cursor: pointer; }
+  #onetrust-banner { position: fixed; left: 0; right: 0; bottom: 0; background: #ddd; padding: 12px; z-index: 1000; }
+  #challenge { position: fixed; top: 20px; left: 20px; z-index: 2000; background: #fff; border: 2px solid #333; }
+</style>
+</head>
+<body>
+<div id="onetrust-banner">
+  <p>Wij gebruiken cookies.</p>
+  <button id="onetrust-accept-btn-handler">Alles accepteren</button>
+  <button id="onetrust-reject-all-handler">Weigeren</button>
+</div>
+<main id="app"></main>
+<div id="challenge-slot"></div>
+
+<script>
+"use strict";
+const params = new URLSearchParams(location.search);
+const STATIONS = ["Amsterdam Centraal", "Amsterdam Sloterdijk", "Amsterdam Zuid", "Rotterdam Centraal",
+                  "Utrecht Centraal", "Utrecht Lunetten", "Utrecht Vaartsche Rijn"];
+const state = { ticket: null, card: ["3528", "", "", ""], data: {} };
+let uid = 0;
+const gid = (p) => `${p}_erh_${++uid}`; // generated, unstable ids like Mendix
+const app = document.getElementById("app");
+
+function xas(payload) {
+  return fetch("/xas/", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) })
+    .then((r) => r.json());
+}
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+document.getElementById("onetrust-reject-all-handler").onclick = () => {
+  document.getElementById("onetrust-banner").remove();
+  xas({ action: "cookie_reject" });
+};
+document.getElementById("onetrust-accept-btn-handler").onclick = () => {
+  document.getElementById("onetrust-banner").remove();
+  xas({ action: "cookie_accept" });
+};
+
+// ---- step 1: Vervoerbewijs -------------------------------------------------------------------
+function renderStart() {
+  const tickets = ["OV-chipkaart / NS-Business Card", "Eenmalige chipkaart", "E-ticket of mobiel ticket",
+                   "Bankpas / Creditcard", "OV-pas"];
+  const radios = tickets.map((t) => { const id = gid("radio"); return `<div><input type="radio" id="${id}" name="${gid("ticket")}" value="${esc(t)}"><label for="${id}">${esc(t)}</label></div>`; }).join("");
+  app.innerHTML = `
+    <h2>Vervoerbewijs</h2>
+    <fieldset><legend>Waarmee heb je gereisd?</legend>${radios}</fieldset>
+    <div id="card-slot"></div>
+    <div class="err" id="step-error" hidden></div>
+    <button type="button" id="${gid("btn")}" class="next">Naar reisgegevens</button>`;
+  app.querySelectorAll("input[type=radio]").forEach((r) => {
+    r.onchange = () => { state.ticket = r.value; xas({ action: "ticket", ticket: r.value }).then(renderCard); };
+  });
+  app.querySelector(".next").onclick = startNext;
+}
+
+function renderCard() {
+  if (state.ticket !== "OV-chipkaart / NS-Business Card") return;
+  const inputs = state.card.map((v, i) =>
+    `<input ${i === 0 ? 'type="text"' : 'type="tel"'} id="${gid("card")}" name="${gid("cardpart")}" maxlength="4" inputmode="numeric" value="${v}" data-i="${i}">`).join(" ");
+  document.getElementById("card-slot").innerHTML = `
+    <div class="mx-groupbox"><div class="form-group">
+      <label>Je OV-chipkaartnummer / NS-Business Card</label>
+      <div class="cardgroup">${inputs}</div>
+      <div class="err" id="card-error" hidden>Vul een OV-chipkaartnummer in.</div>
+    </div></div>`;
+  const all = [...document.querySelectorAll(".cardgroup input")];
+  all.forEach((inp, i) => {
+    inp.oninput = () => {
+      state.card[i] = inp.value.replace(/\D/g, "");
+      inp.value = state.card[i];
+      if (inp.value.length === 4 && all[i + 1]) all[i + 1].focus(); // widget-style auto-advance
+    };
+  });
+}
+
+function showError(id, text) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = text;
+  el.hidden = false;
+}
+
+function startNext() {
+  const card = state.card.join("");
+  if (state.ticket !== "OV-chipkaart / NS-Business Card" || card.length < 16) {
+    showError("card-error", "Vul een OV-chipkaartnummer in.");
+    return;
+  }
+  xas({ action: "card", card }).then((res) => {
+    if (!res.ok) { showError("card-error", "Het OV-chipkaartnummer is ongeldig."); return; }
+    if (res.challenge) { showChallenge(() => renderTravel()); return; }
+    renderTravel();
+  });
+}
+
+// ---- reCAPTCHA-like challenge ----------------------------------------------------------------
+function showChallenge(done) {
+  const slot = document.getElementById("challenge-slot");
+  slot.innerHTML = `<div id="challenge"><iframe title="recaptcha challenge expires in two minutes" src="/challenge.html" width="300" height="200"></iframe></div>`;
+  const timer = setInterval(() => {
+    fetch("/challenge_status").then((r) => r.json()).then((s) => {
+      if (s.solved) { clearInterval(timer); slot.innerHTML = ""; done(); }
+    });
+  }, 100);
+}
+
+// ---- step 2: Reisgegevens --------------------------------------------------------------------
+function stationField(label, key) {
+  const id = gid("station");
+  return `<div class="form-group"><label for="${id}">${label}</label>
+    <input type="text" id="${id}" name="${gid("st")}" role="combobox" autocomplete="off" data-key="${key}">
+    <ul role="listbox" hidden></ul></div>`;
+}
+function renderTravel() {
+  const heading = params.get("variant") === "newheading" ? "Jouw reis" : "Reisgegevens";
+  app.innerHTML = `
+    <h2>${heading}</h2>
+    <div class="form-group"><label for="d1">Datum van je reis</label><input type="text" id="d1" name="${gid("date")}" placeholder="dd-mm-jjjj"></div>
+    ${stationField("Vertrekstation", "from")}
+    ${stationField("Aankomststation", "to")}
+    <div class="form-group"><label for="t1">Geplande vertrektijd</label><input type="text" id="t1" name="${gid("time")}" placeholder="uu:mm"></div>
+    <div class="err" id="step-error" hidden></div>
+    <button type="button" class="next">Naar jouw gegevens</button>`;
+  state.data = {};
+  app.querySelectorAll("input[role=combobox]").forEach((inp) => {
+    const list = inp.parentElement.querySelector("ul");
+    let seq = 0;
+    inp.oninput = () => {
+      const mine = ++seq;
+      state.data[inp.dataset.key] = null; // typed text is not a selection
+      xas({ action: "stations", q: inp.value }).then(() => {
+        if (mine !== seq) return;
+        const q = inp.value.toLowerCase();
+        const hits = q ? STATIONS.filter((s) => s.toLowerCase().includes(q)) : [];
+        list.innerHTML = hits.map((s) => `<li role="option">${esc(s)}</li>`).join("");
+        list.hidden = hits.length === 0;
+        list.querySelectorAll("li").forEach((li) => {
+          li.onclick = () => { inp.value = li.textContent; state.data[inp.dataset.key] = li.textContent; list.hidden = true; list.innerHTML = ""; };
+        });
+      });
+    };
+  });
+  app.querySelector(".next").onclick = () => {
+    const date = document.getElementById("d1").value;
+    const time = document.getElementById("t1").value;
+    if (!/^\d{2}-\d{2}-\d{4}$/.test(date)) return showError("step-error", "De datum is ongeldig.");
+    if (!state.data.from || !state.data.to) return showError("step-error", "Selecteer een station uit de lijst.");
+    xas({ action: "next", step: "reis", data: { date, time, from: state.data.from, to: state.data.to } }).then(renderPerson);
+  };
+}
+
+// ---- step 3: Jouw gegevens -------------------------------------------------------------------
+function renderPerson() {
+  app.innerHTML = `
+    <h2>Jouw gegevens</h2>
+    <div class="form-group"><label for="p1">Je IBAN</label><input type="text" id="p1" name="${gid("iban")}"></div>
+    <div class="form-group"><label for="p2">Naam rekeninghouder</label><input type="text" id="p2" name="${gid("holder")}"></div>
+    <div class="form-group"><label for="p3">E-mailadres</label><input type="text" id="p3" name="${gid("mail")}"></div>
+    <div class="err" id="step-error" hidden></div>
+    <button type="button" class="next">Naar controleren</button>`;
+  app.querySelector(".next").onclick = () => {
+    const data = { iban: p1.value, holder: p2.value, email: p3.value };
+    if (!data.iban || !data.holder || !data.email) return showError("step-error", "Vul alle velden in. Dit is verplicht.");
+    xas({ action: "next", step: "gegevens", data }).then(renderReview);
+  };
+}
+
+// ---- step 4: Controleren ---------------------------------------------------------------------
+function renderReview() {
+  app.innerHTML = `
+    <h2>Controleren</h2>
+    <p>Als je aanvraag is goedgekeurd, wordt het bedrag binnen enkele dagen op je rekening ontvangen.</p>
+    <div class="form-group"><input type="checkbox" id="c1" name="${gid("agree")}"><label for="c1">Ik ga akkoord met de voorwaarden</label></div>
+    <div class="err" id="step-error" hidden></div>
+    <button type="button" class="next">Aanvraag versturen</button>`;
+  app.querySelector(".next").onclick = () => {
+    if (!document.getElementById("c1").checked) return showError("step-error", "Je moet akkoord gaan. Dit is verplicht.");
+    xas({ action: "final" }).then((res) => {
+      app.innerHTML = `<h2>Bedankt voor je aanvraag</h2><p>Je aanvraag is verstuurd. Referentienummer: ${esc(res.reference)}.</p>`;
+    });
+  };
+}
+
+xas({ action: "load" }).then(renderStart);
+</script>
+</body>
+</html>
