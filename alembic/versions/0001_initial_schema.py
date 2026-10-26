@@ -36,8 +36,8 @@ def upgrade() -> None:
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('station', sa.String(length=32), nullable=False),
     sa.Column('train_number', sa.String(length=32), nullable=False),
-    sa.Column('planned_at', treinvertraging.models.UTCDateTime(), nullable=False),
-    sa.Column('actual_at', treinvertraging.models.UTCDateTime(), nullable=True),
+    sa.Column('planned_at', sa.DateTime(), nullable=False),
+    sa.Column('actual_at', sa.DateTime(), nullable=True),
     sa.Column('delay_min', sa.Integer(), nullable=True),
     sa.Column('cancelled', sa.Boolean(), nullable=False),
     sa.Column('source', sa.String(length=16), nullable=False),
@@ -50,7 +50,7 @@ def upgrade() -> None:
 
     op.create_table('events',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
-    sa.Column('ts', treinvertraging.models.UTCDateTime(), nullable=False),
+    sa.Column('ts', sa.DateTime(), nullable=False),
     sa.Column('level', sa.String(length=16), nullable=False),
     sa.Column('kind', sa.String(length=64), nullable=False),
     sa.Column('message', sa.Text(), nullable=False),
@@ -71,8 +71,8 @@ def upgrade() -> None:
     sa.Column('account_id', sa.Integer(), nullable=False),
     sa.Column('source', sa.String(length=16), nullable=False),
     sa.Column('card_id', sa.String(length=64), nullable=False),
-    sa.Column('checkin_at', treinvertraging.models.UTCDateTime(), nullable=False),
-    sa.Column('checkout_at', treinvertraging.models.UTCDateTime(), nullable=True),
+    sa.Column('checkin_at', sa.DateTime(), nullable=False),
+    sa.Column('checkout_at', sa.DateTime(), nullable=True),
     sa.Column('from_station', sa.String(length=32), nullable=False),
     sa.Column('to_station', sa.String(length=32), nullable=True),
     sa.Column('fare_eur', sa.Numeric(precision=10, scale=2), nullable=True),
@@ -81,8 +81,8 @@ def upgrade() -> None:
     sa.Column('ns_delay_flag', sa.Boolean(), nullable=True),
     sa.Column('ns_claim_ref', sa.Text(), nullable=True),
     sa.Column('raw_json', sa.JSON(), nullable=True),
-    sa.Column('first_seen', treinvertraging.models.UTCDateTime(), nullable=False),
-    sa.Column('last_seen', treinvertraging.models.UTCDateTime(), nullable=False),
+    sa.Column('first_seen', sa.DateTime(), nullable=False),
+    sa.Column('last_seen', sa.DateTime(), nullable=False),
     sa.ForeignKeyConstraint(['account_id'], ['accounts.id'], ),
     sa.PrimaryKeyConstraint('key')
     )
@@ -101,7 +101,7 @@ def upgrade() -> None:
     sa.Column('expected_eur', sa.Numeric(precision=10, scale=2), nullable=False),
     sa.Column('reason', sa.Text(), nullable=False),
     sa.Column('deadline', sa.Date(), nullable=False),
-    sa.Column('assessed_at', treinvertraging.models.UTCDateTime(), nullable=False),
+    sa.Column('assessed_at', sa.DateTime(), nullable=False),
     sa.ForeignKeyConstraint(['trip_key'], ['trips.key'], ),
     sa.PrimaryKeyConstraint('id')
     )
@@ -119,9 +119,9 @@ def upgrade() -> None:
     sa.Column('attempts', sa.Integer(), nullable=False),
     sa.Column('last_error', sa.Text(), nullable=True),
     sa.Column('debug_dir', sa.Text(), nullable=True),
-    sa.Column('created_at', treinvertraging.models.UTCDateTime(), nullable=False),
-    sa.Column('updated_at', treinvertraging.models.UTCDateTime(), nullable=False),
-    sa.Column('submitted_at', treinvertraging.models.UTCDateTime(), nullable=True),
+    sa.Column('created_at', sa.DateTime(), nullable=False),
+    sa.Column('updated_at', sa.DateTime(), nullable=False),
+    sa.Column('submitted_at', sa.DateTime(), nullable=True),
     sa.ForeignKeyConstraint(['trip_key'], ['trips.key'], ),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('trip_key', name='uq_claims_trip_key')

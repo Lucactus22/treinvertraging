@@ -50,7 +50,11 @@ class _YamlSettingsSource(PydanticBaseSettingsSource):
         return self._data.get(field_name.lower()), field_name, False
 
     def __call__(self) -> dict[str, Any]:
-        return {k: v for k, v in self._data.items() if k in self.settings_cls.model_fields}
+        return {
+            name: self._data[name.lower()]
+            for name in self.settings_cls.model_fields
+            if name.lower() in self._data
+        }
 
 
 class Settings(BaseSettings):

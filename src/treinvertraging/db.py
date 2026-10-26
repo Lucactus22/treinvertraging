@@ -110,8 +110,9 @@ def _alembic_dir() -> Path:
 
 def init_db() -> None:
     """Run ``alembic upgrade head`` against ``DATA_DIR/app.db`` (creates the file if needed)."""
-    from alembic import command
     from alembic.config import Config
+
+    from alembic import command
 
     settings = get_settings()
     settings.DATA_DIR.mkdir(parents=True, exist_ok=True)

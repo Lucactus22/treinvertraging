@@ -153,70 +153,89 @@ code against them and do not change them without updating this file.
 
 ```python
 # domain.py
-class Source(StrEnum): NS = "ns"; OVCHIP = "ovchip"
+class Source(StrEnum):
+    NS = "ns"
+    OVCHIP = "ovchip"
+
+
 class ClaimState(StrEnum):
-    DETECTED="detected"          # trip found, not yet assessed
-    INELIGIBLE="ineligible"
-    ELIGIBLE="eligible"          # meets rules, waiting for policy (dry_run/approve/auto)
-    AWAITING_APPROVAL="awaiting_approval"
-    APPROVED="approved"
-    SUBMITTING="submitting"      # set BEFORE clicking submit
-    SUBMITTED="submitted"        # site confirmed receipt
-    CONFIRMED="confirmed"        # seen in "mijn aanvragen"
-    PAID="paid"; REJECTED="rejected"
-    NEEDS_HUMAN="needs_human"    # ladder exhausted
-    EXPIRED="expired"
+    DETECTED = "detected"  # trip found, not yet assessed
+    INELIGIBLE = "ineligible"
+    ELIGIBLE = "eligible"  # meets rules, waiting for policy (dry_run/approve/auto)
+    AWAITING_APPROVAL = "awaiting_approval"
+    APPROVED = "approved"
+    SUBMITTING = "submitting"  # set BEFORE clicking submit
+    SUBMITTED = "submitted"  # site confirmed receipt
+    CONFIRMED = "confirmed"  # seen in "mijn aanvragen"
+    PAID = "paid"
+    REJECTED = "rejected"
+    NEEDS_HUMAN = "needs_human"  # ladder exhausted
+    EXPIRED = "expired"
+
 
 class TripDTO(BaseModel):
     source: Source
-    card_id: str                 # masked card number or NS account id
-    checkin_at: datetime         # tz-aware Europe/Amsterdam
+    card_id: str  # masked card number or NS account id
+    checkin_at: datetime  # tz-aware Europe/Amsterdam
     checkout_at: datetime | None
-    from_station: str            # canonical station code (e.g. "UT")
+    from_station: str  # canonical station code (e.g. "UT")
     to_station: str | None
-    fare_eur: Decimal | None     # amount actually charged
-    product: str | None          # e.g. "Dal Voordeel", "Vol tarief"
-    operator: str | None         # "NS", "Arriva", ...
-    ns_delay_flag: bool | None   # NS itself marks it as delayed/claimable
-    ns_claim_ref: str | None     # opaque handle to open NS's prefilled form
-    raw: dict                    # original JSON/row for debugging
-    def key(self) -> str: ...    # sha256(source|card_id|checkin_at.isoformat()|from_station)
+    fare_eur: Decimal | None  # amount actually charged
+    product: str | None  # e.g. "Dal Voordeel", "Vol tarief"
+    operator: str | None  # "NS", "Arriva", ...
+    ns_delay_flag: bool | None  # NS itself marks it as delayed/claimable
+    ns_claim_ref: str | None  # opaque handle to open NS's prefilled form
+    raw: dict  # original JSON/row for debugging
+
+    def key(self) -> str: ...  # sha256(source|card_id|checkin_at.isoformat()|from_station)
+
 
 class DelayAssessment(BaseModel):
     trip_key: str
     arrival_delay_min: int | None
     cancelled: bool
-    evidence: list[str]          # e.g. ["rdt:2026-09 train 3045 UT→ASD +34", "ns_flag"]
+    evidence: list[str]  # e.g. ["rdt:2026-09 train 3045 UT→ASD +34", "ns_flag"]
     eligible: bool
-    percent: int                 # 0/50/100
+    percent: int  # 0/50/100
     expected_eur: Decimal
     reason: str
     deadline: date
 
+
 class SubmitResult(BaseModel):
-    ok: bool; reference: str | None; screenshot: str | None; message: str
-    channel: str                    # "gtbv" | "mijnns"
-    reached_final_submit: bool      # True once the final submit button was clicked
+    ok: bool
+    reference: str | None
+    screenshot: str | None
+    message: str
+    channel: str  # "gtbv" | "mijnns"
+    reached_final_submit: bool  # True once the final submit button was clicked
     dry_run: bool = False
 ```
 
 ```python
 # adapters/base.py
-class ClaimantInfo(BaseModel):          # from the account row, decrypted at use
-    card_number: str                    # 16 digits, "3528..."
-    iban: str; holder_name: str; email: str
+class ClaimantInfo(BaseModel):  # from the account row, decrypted at use
+    card_number: str  # 16 digits, "3528..."
+    iban: str
+    holder_name: str
+    email: str
     ticket_type: Literal["ov_chipkaart"] = "ov_chipkaart"
 
-class TripSource(Protocol):             # ns.py, ovchip.py
+
+class TripSource(Protocol):  # ns.py, ovchip.py
     source: Source
+
     async def ensure_logged_in(self) -> None: ...
     async def list_trips(self, since: date) -> list[TripDTO]: ...
 
-class ClaimSubmitter(Protocol):         # gtbv.py (primary), ns.py (fallback)
-    channel: str                        # "gtbv" | "mijnns"
+
+class ClaimSubmitter(Protocol):  # gtbv.py (primary), ns.py (fallback)
+    channel: str  # "gtbv" | "mijnns"
+
     async def submit_claim(self, trip: TripDTO, who: ClaimantInfo, *, dry_run: bool) -> SubmitResult: ...
 
-class ClaimStatusReader(Protocol):      # ns.py ("mijn aanvragen"), otp/imap.py (confirmation mails)
+
+class ClaimStatusReader(Protocol):  # ns.py ("mijn aanvragen"), otp/imap.py (confirmation mails)
     async def list_submitted_claims(self, since: date) -> list[dict]: ...
 ```
 `dry_run=True` must fill every step and stop **before** the final submit button,

@@ -5,7 +5,6 @@ from __future__ import annotations
 from logging.config import fileConfig
 
 from alembic import context
-
 from treinvertraging.config import get_settings
 from treinvertraging.db import make_engine
 from treinvertraging.models import Base
