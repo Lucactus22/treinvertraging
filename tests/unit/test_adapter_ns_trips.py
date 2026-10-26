@@ -11,6 +11,7 @@ from tests.browser_utils import LocalServer, page_server, runtime  # noqa: F401
 from tests.unit.test_adapter_ns_support import (  # noqa: F401
     FakeNs,
     _clean_takeovers,
+    _fast_human,
     fake_ns,
     make_adapter,
     ns_server,
@@ -143,7 +144,9 @@ async def test_list_submitted_claims_from_recorded_json(
     assert {"date", "from", "to", "status", "reference", "amount"} <= c.keys()
 
 
-async def test_list_submitted_claims_since_filter(fake_ns: FakeNs, make_adapter: Callable[..., NsAdapter]) -> None:
+async def test_list_submitted_claims_since_filter(
+    fake_ns: FakeNs, make_adapter: Callable[..., NsAdapter]
+) -> None:
     claims = await make_adapter().list_submitted_claims(date(2026, 10, 1))
     assert [c["reference"] for c in claims] == ["GTB-2026-12345"]
 

@@ -138,6 +138,19 @@ def _clean_takeovers() -> Iterator[None]:
     tk.clear_takeovers()
 
 
+@pytest.fixture(autouse=True)
+def _fast_human(monkeypatch: pytest.MonkeyPatch) -> None:
+    """No human-like pauses in tests (typing speed is configured through FAST_SELECTORS)."""
+    from treinvertraging.adapters import ns as ns_module
+    from treinvertraging.browser import human
+
+    async def instant(*_: Any, **__: Any) -> float:
+        return 0.0
+
+    monkeypatch.setattr(human, "jitter_sleep", instant)
+    monkeypatch.setattr(ns_module, "jitter_sleep", instant)
+
+
 @pytest.fixture
 def ns_server() -> Iterator[LocalServer]:
     server = LocalServer(NS_FIXTURES).start()
@@ -154,7 +167,7 @@ def fake_ns(ns_server: LocalServer) -> FakeNs:
 
 @pytest.fixture
 def set_selectors(data_dir: Path) -> Callable[..., None]:
-    """``set_selectors(login={...}, dom={...})`` writes CONFIG_DIR/selectors/ns.yaml (on top of FAST_SELECTORS)."""
+    """``set_selectors(login={...})`` writes CONFIG_DIR/selectors/ns.yaml on top of FAST_SELECTORS."""
 
     def _set(**overrides: Any) -> None:
         merged = _deep_merge(FAST_SELECTORS, overrides)
@@ -185,7 +198,9 @@ def make_account(account_id: int = 1) -> models.Account:
 def make_adapter(
     ns_server: LocalServer, runtime: BrowserRuntime, set_selectors: Callable[..., None]
 ) -> Callable[..., NsAdapter]:
-    def _make(otp: FakeOtp | None = None, takeover_timeout: float | None = None, account_id: int = 1) -> NsAdapter:
+    def _make(
+        otp: FakeOtp | None = None, takeover_timeout: float | None = None, account_id: int = 1
+    ) -> NsAdapter:
         return NsAdapter(
             make_account(account_id),
             runtime=runtime,

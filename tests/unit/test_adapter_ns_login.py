@@ -14,6 +14,7 @@ from tests.unit.test_adapter_ns_support import (  # noqa: F401
     FakeNs,
     FakeOtp,
     _clean_takeovers,
+    _fast_human,
     fake_ns,
     make_adapter,
     ns_server,

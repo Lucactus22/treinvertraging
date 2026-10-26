@@ -11,6 +11,7 @@ from tests.unit.test_adapter_ns_support import (  # noqa: F401
     GOOD_IBAN,
     FakeNs,
     _clean_takeovers,
+    _fast_human,
     claimant,
     fake_ns,
     make_adapter,
@@ -37,7 +38,9 @@ async def test_dry_run_stops_before_final_click(
     assert fake_ns.requested("/claim.html")
 
 
-async def test_submit_success_returns_reference(fake_ns: FakeNs, make_adapter: Callable[..., NsAdapter]) -> None:
+async def test_submit_success_returns_reference(
+    fake_ns: FakeNs, make_adapter: Callable[..., NsAdapter]
+) -> None:
     res = await make_adapter().submit_claim(sample_trip(), claimant(), dry_run=False)
     assert res.ok and res.reached_final_submit and not res.dry_run
     assert res.reference == "GTB-2026-12345"

@@ -58,7 +58,8 @@ DEFAULT_BASE_URL = "https://www.ns.nl"
 
 # net errors that look like a WAF dropping the connection rather than an outage
 _BLOCK_NET_ERRORS = re.compile(
-    r"ERR_HTTP2_PROTOCOL_ERROR|ERR_CONNECTION_RESET|ERR_EMPTY_RESPONSE|ERR_ACCESS_DENIED|ERR_SSL_PROTOCOL", re.I
+    r"ERR_HTTP2_PROTOCOL_ERROR|ERR_CONNECTION_RESET|ERR_EMPTY_RESPONSE|ERR_ACCESS_DENIED|ERR_SSL_PROTOCOL",
+    re.I,
 )
 
 
@@ -254,7 +255,18 @@ _NAME_KEYS = (
 )  # fmt: skip
 _CODE_KEYS = ("code", "stationcode", "uiccode", "uic")
 _DATE_KEYS = {"date", "datum", "traveldate", "reisdatum", "day", "dag", "journeydate"}
-_FARE_HINTS = ("fare", "price", "amount", "bedrag", "tarief", "prijs", "cost", "kosten", "charged", "afgeschreven")
+_FARE_HINTS = (
+    "fare",
+    "price",
+    "amount",
+    "bedrag",
+    "tarief",
+    "prijs",
+    "cost",
+    "kosten",
+    "charged",
+    "afgeschreven",
+)
 _FARE_EXCLUDE = ("discount", "korting", "delay", "compensat", "refund", "vergoeding", "claim", "vat", "btw")
 _DELAY_HINTS = (
     "delay", "vertraag", "vertraging", "compensat", "claimable", "eligible", "geldterug", "refund",
@@ -359,7 +371,9 @@ def _truthy(value: Any) -> bool | None:
 
 def _delay_flag(rec: dict[str, Any]) -> bool | None:
     flags = [
-        _truthy(v) for k, v in rec.items() if any(h in _norm(k) for h in _DELAY_HINTS) and _truthy(v) is not None
+        _truthy(v)
+        for k, v in rec.items()
+        if any(h in _norm(k) for h in _DELAY_HINTS) and _truthy(v) is not None
     ]
     if not flags:
         return None
@@ -410,7 +424,9 @@ def _first_str(rec: dict[str, Any], keys: set[str]) -> str | None:
 def _find_card(rec: dict[str, Any]) -> str | None:
     for k, v in rec.items():
         nk = _norm(k)
-        if any(h in nk for h in ("card", "kaart", "mediumid", "pasnummer", "pasnr")) and isinstance(v, str | int):
+        if any(h in nk for h in ("card", "kaart", "mediumid", "pasnummer", "pasnr")) and isinstance(
+            v, str | int
+        ):
             masked = mask_card(str(v))
             if masked:
                 return masked
@@ -509,7 +525,12 @@ def _claim_from_record(rec: dict[str, Any], m: _Mapping) -> dict[str, Any] | Non
     status = _first_str(rec, _STATUS_KEYS)
     reference = None
     for k, v in rec.items():
-        if _norm(k) in _CLAIM_REF_KEYS and isinstance(v, str | int) and not isinstance(v, bool) and str(v).strip():
+        if (
+            _norm(k) in _CLAIM_REF_KEYS
+            and isinstance(v, str | int)
+            and not isinstance(v, bool)
+            and str(v).strip()
+        ):
             reference = str(v).strip()
             break
     if not status or not reference:
@@ -700,7 +721,9 @@ class NsAdapter:
         except PlaywrightError as e:
             msg = str(e).splitlines()[0][:200]
             if _BLOCK_NET_ERRORS.search(msg):
-                raise BlockedByBotProtection(f"connection dropped while opening {_path_only(url)}: {msg}") from e
+                raise BlockedByBotProtection(
+                    f"connection dropped while opening {_path_only(url)}: {msg}"
+                ) from e
             raise LayoutChanged(f"could not open {_path_only(url)}: {msg}") from e
         status = resp.status if resp is not None else None
         if status in (self._c("login.blocked.status_codes", [403, 429]) or []):
@@ -758,7 +781,9 @@ class NsAdapter:
                 reason = f"bot protection: {e}"
                 break
             except (LayoutChanged, PlaywrightError, TimeoutError) as e:
-                reason = f"login failed ({type(e).__name__}): {str(e).splitlines()[0][:200] if str(e) else ''}"
+                reason = (
+                    f"login failed ({type(e).__name__}): {str(e).splitlines()[0][:200] if str(e) else ''}"
+                )
                 log.warning("Mijn NS login attempt %d/%d failed: %s", attempt, max_attempts, reason)
                 if attempt < max_attempts:
                     await jitter_sleep(1.0, 2.5)
@@ -900,7 +925,9 @@ class NsAdapter:
                 return st
             if st in ("login", "otp") and err_rx and await self._error_visible(s.page, err_rx):
                 raise LoginRequired(
-                    "Mijn NS rejected the credentials" if phase == "login" else "Mijn NS rejected the verification code"
+                    "Mijn NS rejected the credentials"
+                    if phase == "login"
+                    else "Mijn NS rejected the verification code"
                 )
             if loop.time() >= deadline:
                 raise LoginRequired(f"no result after submitting the {phase} form (still {st})")
@@ -1153,7 +1180,10 @@ class NsAdapter:
         out: list[dict[str, Any]] = []
         for i in range(await rows.count()):
             item = rows.nth(i)
-            vals = {n: await _read_field(item, fields.get(n, "")) for n in ("date", "from", "to", "status", "reference", "amount")}
+            vals = {
+                n: await _read_field(item, fields.get(n, ""))
+                for n in ("date", "from", "to", "status", "reference", "amount")
+            }
             if not vals["status"] and not vals["reference"]:
                 continue
             st = _stamp(vals["date"]) if vals["date"] else None
@@ -1168,7 +1198,12 @@ class NsAdapter:
                     "reference": vals["reference"],
                     "amount": str(amount) if amount is not None else None,
                     "checkin_at": None,
-                    "raw": {"strategy": "dom", "from_name": vals["from"], "to_name": vals["to"], "record": vals},
+                    "raw": {
+                        "strategy": "dom",
+                        "from_name": vals["from"],
+                        "to_name": vals["to"],
+                        "record": vals,
+                    },
                 }
             )
         return out
@@ -1220,7 +1255,11 @@ class NsAdapter:
             await self._open_claim_via_ui(s, trip)
         heading = self._c("claim.expect_heading", "")
         if heading:
-            h = await _find(page, {"role": "heading", "name": heading}, timeout=float(self._c("claim.heading_timeout_s", 15)))
+            h = await _find(
+                page,
+                {"role": "heading", "name": heading},
+                timeout=float(self._c("claim.heading_timeout_s", 15)),
+            )
             if h is None:
                 raise LayoutChanged(f"claim form heading {heading!r} not found on {_path_only(page.url)}")
 
@@ -1229,7 +1268,9 @@ class NsAdapter:
         page = s.page
         item_css = self._c("dom.item", "")
         if not item_css:
-            raise LayoutChanged("trip has no ns_claim_ref and dom.item is not configured to find it in the UI")
+            raise LayoutChanged(
+                "trip has no ns_claim_ref and dom.item is not configured to find it in the UI"
+            )
         await self._open_section(s, "travel_history")
         await self._load_more(s)
         local = trip.checkin_at.astimezone(AMS)
@@ -1326,7 +1367,9 @@ class NsAdapter:
         step_timeout = float(self._c("claim.step_timeout_s", 8))
         for _ in range(int(self._c("claim.max_steps", 6))):
             await self._wait_any(
-                page, ["claim.iban", "claim.holder", "claim.email", "claim.submit", "claim.next"], step_timeout
+                page,
+                ["claim.iban", "claim.holder", "claim.email", "claim.submit", "claim.next"],
+                step_timeout,
             )
             await self._fill_text(page, "claim.iban", iban)
             await self._fill_text(page, "claim.holder", who.holder_name.strip())
@@ -1388,7 +1431,9 @@ class NsAdapter:
                 reached_final_submit=True,
             )
 
-    async def _await_confirmation(self, s: BrowserSession, b: Bundle, trip: TripDTO, pre_shot: Path) -> SubmitResult:
+    async def _await_confirmation(
+        self, s: BrowserSession, b: Bundle, trip: TripDTO, pre_shot: Path
+    ) -> SubmitResult:
         page = s.page
         success = self._c("claim.success_regex", "")
         loop = asyncio.get_running_loop()
@@ -1416,7 +1461,11 @@ class NsAdapter:
                 )
             await asyncio.sleep(0.4)
         ref = None
-        m = re.search(self._c("claim.reference_regex", ""), text, re.IGNORECASE) if self._c("claim.reference_regex") else None
+        m = (
+            re.search(self._c("claim.reference_regex", ""), text, re.IGNORECASE)
+            if self._c("claim.reference_regex")
+            else None
+        )
         if m:
             ref = m.group(1).strip()
         shot = self._screenshot_path(trip, "confirmation")
