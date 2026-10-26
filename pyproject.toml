@@ -43,7 +43,7 @@ treinvertraging = "treinvertraging.__main__:app"
 where = ["src"]
 
 [tool.setuptools.package-data]
-treinvertraging = ["web/templates/**/*", "web/static/**/*", "defaults/*"]
+treinvertraging = ["web/templates/**/*", "web/static/**/*", "defaults/*", "defaults/selectors/*"]
 
 [tool.ruff]
 line-length = 110

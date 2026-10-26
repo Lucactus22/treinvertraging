@@ -44,7 +44,7 @@ These findings come from recon on 2026-10-26 and shape the whole design.
       the cookies and tokens of the logged-in browser context (`context.request`). This is
       fast and structured, and it survives visual redesigns.
    2. **UI automation** with *semantic* locators: `get_by_role` and `get_by_label` with Dutch
-      text, never brittle CSS. All locators live in `config/selectors.yaml`, a mounted volume,
+      text, never brittle CSS. All locators live in `config/selectors/<site>.yaml` (loaded via `treinvertraging.selectors`, defaults bundled in `src/treinvertraging/defaults/selectors/`), a mounted volume,
       so they can be fixed without a rebuild.
    3. **Human takeover**: pause, notify you with a link to the live browser (noVNC on port
       6080), let you click through, then resume. This is the last rung, never a silent failure.
@@ -403,7 +403,7 @@ must not edit files owned by another WP (the shared contracts in §3 are owned b
   SQLite DB, covering idempotency (run twice, one submission), crash between `submitting` and
   submit (reconcile handles it), the approve flow and the deadline alert.
 
-**WP-H: NS adapter** (`adapters/ns.py`, NS section of `config/selectors.yaml`)
+**WP-H: NS adapter** (`adapters/ns.py`, NS section of `config/selectors/<site>.yaml` (loaded via `treinvertraging.selectors`, defaults bundled in `src/treinvertraging/defaults/selectors/`))
 - `ensure_logged_in`: open `https://www.ns.nl/mijnns`. If redirected to `login.ns.nl/login`,
   dismiss cookies, fill `#email` and `#password` with human typing, check `#remember` and
   submit. Handle a verification-code screen through the account's OTP provider. Detect
@@ -524,7 +524,7 @@ must not edit files owned by another WP (the shared contracts in §3 are owned b
 
 - Python 3.12, type hints everywhere, `async` for anything touching Playwright or the network.
 - Do not invent fields in the §3 contracts. If you need one, put it in `raw` or note it under "Contract change requests" in your final report.
-- Never hard-code CSS selectors for NS or OV pages in code. Use `config/selectors.yaml` keys with role and label-based defaults.
+- Never hard-code CSS selectors for NS or OV pages in code. Use `config/selectors/<site>.yaml` (loaded via `treinvertraging.selectors`, defaults bundled in `src/treinvertraging/defaults/selectors/`) keys with role and label-based defaults.
 - Never log passwords, IBANs or OTP codes, and redact them in debug bundles (`debug.py` provides `redact()`).
 - Every network-facing function has a timeout and a clear exception type (`LoginRequired`, `BlockedByBotProtection`, `LayoutChanged`, `InvalidInput`, `TakeoverTimeout`), all defined in `treinvertraging/errors.py` (owned by WP-A).
 - Tests must not touch the real internet. Use fixtures and local servers.
