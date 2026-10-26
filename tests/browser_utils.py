@@ -134,13 +134,17 @@ class LocalServer:
     def add_route(self, method: str, path: str, handler: RouteHandler, *, delay: float = 0.0) -> None:
         self._routes[(method.upper(), path)] = _Route(handler, delay)
 
-    def add_json(self, path: str, data: Any, *, method: str = "GET", delay: float = 0.0, status: int = 200) -> None:
+    def add_json(
+        self, path: str, data: Any, *, method: str = "GET", delay: float = 0.0, status: int = 200
+    ) -> None:
         payload = json.dumps(data).encode()
         self.add_route(method, path, lambda *_: (status, "application/json", payload), delay=delay)
 
     def requests_to(self, path_prefix: str, method: str | None = None) -> list[RecordedRequest]:
         return [
-            r for r in self.requests if r.path.startswith(path_prefix) and (method is None or r.method == method)
+            r
+            for r in self.requests
+            if r.path.startswith(path_prefix) and (method is None or r.method == method)
         ]
 
     def _xas(self, method: str, path: str, body: bytes) -> tuple[int, str, bytes]:

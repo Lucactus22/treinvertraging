@@ -15,9 +15,12 @@ ONETRUST_REJECT = "#onetrust-reject-all-handler"
 COOKIEBOT_ACCEPT = "#CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll"
 COOKIEBOT_REJECT = "#CybotCookiebotDialogBodyButtonDecline"
 
-_ACCEPT_NAMES = re.compile(r"^(alle cookies accepteren|alles accepteren|accepteren|akkoord|accept all|allow all)$", re.I)
+_ACCEPT_NAMES = re.compile(
+    r"^(alle cookies accepteren|alles accepteren|accepteren|akkoord|accept all|allow all)$", re.I
+)
 _REJECT_NAMES = re.compile(
-    r"^(weigeren|alles weigeren|alle cookies weigeren|alleen noodzakelijke( cookies)?|reject all|decline)$", re.I
+    r"^(weigeren|alles weigeren|alle cookies weigeren|alleen noodzakelijke( cookies)?|reject all|decline)$",
+    re.I,
 )
 
 
@@ -43,7 +46,9 @@ async def human_click(target: Locator, *, timeout: float = 15_000) -> None:
         y = box["y"] + box["height"] * random.uniform(0.3, 0.7)
         await page.mouse.move(x, y, steps=random.randint(4, 12))
         await jitter_sleep(0.05, 0.25)
-        await target.click(position={"x": x - box["x"], "y": y - box["y"]}, delay=random.randint(30, 110), timeout=timeout)
+        await target.click(
+            position={"x": x - box["x"], "y": y - box["y"]}, delay=random.randint(30, 110), timeout=timeout
+        )
     else:
         await target.click(delay=random.randint(30, 110), timeout=timeout)
     await jitter_sleep(0.1, 0.4)

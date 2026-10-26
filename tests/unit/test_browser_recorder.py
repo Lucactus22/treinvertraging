@@ -1,3 +1,4 @@
+# ruff: noqa: F811  (pytest fixtures imported from tests.browser_utils)
 from __future__ import annotations
 
 import time
@@ -20,7 +21,9 @@ async def test_records_json_responses(page_server: LocalServer, runtime: Browser
         assert s.recorder.latest(r"/api/trips") is r
 
 
-async def test_records_post_body_and_dump(page_server: LocalServer, runtime: BrowserRuntime, tmp_path) -> None:
+async def test_records_post_body_and_dump(
+    page_server: LocalServer, runtime: BrowserRuntime, tmp_path
+) -> None:
     async with runtime.session("rec2") as s:
         await s.page.goto(page_server.url("/fetch_demo.html"))
         await s.page.get_by_role("button", name="Langzaam").click()
@@ -44,7 +47,9 @@ async def test_wait_idle_waits_for_slow_post(page_server: LocalServer, runtime: 
         assert s.recorder.pending(r"/xas/") == []
 
 
-async def test_wait_idle_spans_gap_between_chained_posts(page_server: LocalServer, runtime: BrowserRuntime) -> None:
+async def test_wait_idle_spans_gap_between_chained_posts(
+    page_server: LocalServer, runtime: BrowserRuntime
+) -> None:
     async with runtime.session("rec4") as s:
         await s.page.goto(page_server.url("/fetch_demo.html"))
         await s.page.get_by_role("button", name="Keten").click()
@@ -54,7 +59,9 @@ async def test_wait_idle_spans_gap_between_chained_posts(page_server: LocalServe
         assert len(page_server.requests_to("/xas/", "POST")) == 2
 
 
-async def test_wait_idle_returns_quickly_when_nothing_pending(page_server: LocalServer, runtime: BrowserRuntime) -> None:
+async def test_wait_idle_returns_quickly_when_nothing_pending(
+    page_server: LocalServer, runtime: BrowserRuntime
+) -> None:
     async with runtime.session("rec5") as s:
         await s.page.goto(page_server.url("/plain.html"))
         t0 = time.monotonic()
@@ -62,7 +69,9 @@ async def test_wait_idle_returns_quickly_when_nothing_pending(page_server: Local
         assert time.monotonic() - t0 < 1.0
 
 
-async def test_wait_idle_ignores_non_matching_requests(page_server: LocalServer, runtime: BrowserRuntime) -> None:
+async def test_wait_idle_ignores_non_matching_requests(
+    page_server: LocalServer, runtime: BrowserRuntime
+) -> None:
     page_server.add_json("/api/trips", {"trips": []}, delay=1.0)
     async with runtime.session("rec6") as s:
         await s.page.goto(page_server.url("/fetch_demo.html"))

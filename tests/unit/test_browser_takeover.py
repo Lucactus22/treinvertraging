@@ -35,7 +35,9 @@ async def test_complete_flow_notifies_and_unregisters() -> None:
         sent.append((title, body))
 
     task = asyncio.create_task(
-        tk.request_takeover("ns-jan", None, "Akamai challenge", timeout=5, notifier=notifier, public_url="http://box:8080")
+        tk.request_takeover(
+            "ns-jan", None, "Akamai challenge", timeout=5, notifier=notifier, public_url="http://box:8080"
+        )
     )
     t = await _wait_active()
     assert (t.account, t.reason) == ("ns-jan", "Akamai challenge")

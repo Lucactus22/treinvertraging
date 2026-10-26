@@ -46,7 +46,10 @@ def test_code_in_subject_and_custom_regex_group() -> None:
 
 
 def test_find_code_filters_sender_and_age_and_prefers_newest() -> None:
-    mails = [parse_message(eml(n)) for n in ("ns_otp_old.eml", "other_sender.eml", "ns_otp_plain.eml", "ov_otp_html.eml")]
+    mails = [
+        parse_message(eml(n))
+        for n in ("ns_otp_old.eml", "other_sender.eml", "ns_otp_plain.eml", "ov_otp_html.eml")
+    ]
     assert find_code(mails, since=SINCE) == "735190"  # newest eligible: 10:02:30
     only_ns = find_code(mails, since=SINCE, senders=("@ns.nl",))
     assert only_ns == "482913"
@@ -107,7 +110,9 @@ def fake_imap(monkeypatch: pytest.MonkeyPatch) -> type[FakeImap]:
 
 
 def cfg(**kw) -> ImapConfig:
-    return ImapConfig(host="imap.example.com", user="me@example.com", password="app-pass", poll_interval=0.05, **kw)
+    return ImapConfig(
+        host="imap.example.com", user="me@example.com", password="app-pass", poll_interval=0.05, **kw
+    )
 
 
 async def test_get_code_via_mocked_imaplib(fake_imap: type[FakeImap]) -> None:
@@ -154,7 +159,13 @@ def test_config_from_env_and_factory() -> None:
         "IMAP_SSL": "false",
     }
     c = ImapConfig.from_env(env)
-    assert (c.host, c.port, c.ssl, c.senders, c.code_regex) == ("h", 143, False, ("ns.nl", "example.org"), r"code: (\d+)")
+    assert (c.host, c.port, c.ssl, c.senders, c.code_regex) == (
+        "h",
+        143,
+        False,
+        ("ns.nl", "example.org"),
+        r"code: (\d+)",
+    )
     assert "s3cr3t-pw" not in repr(c)  # password never shows up in logs
     with pytest.raises(ValueError):
         ImapConfig.from_env({})

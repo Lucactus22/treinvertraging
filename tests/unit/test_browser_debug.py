@@ -1,3 +1,4 @@
+# ruff: noqa: F811  (pytest fixtures imported from tests.browser_utils)
 from __future__ import annotations
 
 import json
@@ -80,7 +81,9 @@ async def test_bundle_written_on_exception_and_redacted(
     meta = json.loads((bundle / "meta.json").read_text())
     assert meta["action"] == "Test Action!" and "ValueError" in meta["error"]
     assert "jan@example.com" not in meta["error"]
-    everything = "".join((bundle / n).read_text() for n in ("page.html", "recorder.json", "meta.json", "aria.yml"))
+    everything = "".join(
+        (bundle / n).read_text() for n in ("page.html", "recorder.json", "meta.json", "aria.yml")
+    )
     for secret in ("jan@example.com", "NL91ABNA0417164300", "3528123412341234", "hunter2"):
         assert secret not in everything
     assert "[IBAN]" in everything and "[EMAIL]" in everything
@@ -122,7 +125,9 @@ async def test_bundle_uses_registered_recorder_without_explicit_arg(
         assert "/api/trips" in (b.path / "recorder.json").read_text()
 
 
-async def test_bundle_prunes_old_on_entry(page_server: LocalServer, runtime: BrowserRuntime, tmp_path: Path) -> None:
+async def test_bundle_prunes_old_on_entry(
+    page_server: LocalServer, runtime: BrowserRuntime, tmp_path: Path
+) -> None:
     old = tmp_path / "2020-old"
     old.mkdir()
     t = time.time() - 31 * 86400

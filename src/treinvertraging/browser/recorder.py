@@ -168,7 +168,9 @@ class Recorder:
         while self._tasks:
             await asyncio.gather(*list(self._tasks), return_exceptions=True)
 
-    def find(self, url_regex: str, *, method: str | None = None, status: int | None = None) -> list[RecordedResponse]:
+    def find(
+        self, url_regex: str, *, method: str | None = None, status: int | None = None
+    ) -> list[RecordedResponse]:
         """Recorded responses whose URL matches ``url_regex`` (``re.search``), oldest first."""
         rx = re.compile(url_regex)
         return [
@@ -196,7 +198,9 @@ class Recorder:
                 if id(e) not in seen_before or not new_only:
                     return e
             if loop.time() >= deadline:
-                raise TimeoutError(f"no response matching {url_regex!r} within {timeout}s (seen {self._total - start_total})")
+                raise TimeoutError(
+                    f"no response matching {url_regex!r} within {timeout}s (seen {self._total - start_total})"
+                )
             await asyncio.sleep(0.025)
 
     def pending(self, url_regex: str | None = None) -> list[tuple[str, str]]:
@@ -217,7 +221,9 @@ class Recorder:
                 return ts
         return None
 
-    async def wait_idle(self, url_regex: str = r"/xas/", *, quiet_ms: int = 500, timeout: float = 15.0) -> None:
+    async def wait_idle(
+        self, url_regex: str = r"/xas/", *, quiet_ms: int = 500, timeout: float = 15.0
+    ) -> None:
         """Wait until no request matching ``url_regex`` is in flight and none started/finished in
         the last ``quiet_ms`` milliseconds. Raises ``TimeoutError`` after ``timeout`` seconds.
 
@@ -231,7 +237,9 @@ class Recorder:
         call_time = time.monotonic()
         while True:
             now = time.monotonic()
-            live = [p for p in self._pending.values() if rx.search(p.url) and now - p.started <= PENDING_EXPIRY_S]
+            live = [
+                p for p in self._pending.values() if rx.search(p.url) and now - p.started <= PENDING_EXPIRY_S
+            ]
             if not live:
                 last = max(call_time, self._last_matching_activity(rx) or 0.0)
                 if now - last >= quiet:

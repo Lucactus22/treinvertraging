@@ -88,9 +88,17 @@ async def default_notify(title: str, body: str) -> None:
         return
     try:
         try:
-            res = await fn(title, body, "warning") if inspect.iscoroutinefunction(fn) else await asyncio.to_thread(fn, title, body, "warning")
+            res = (
+                await fn(title, body, "warning")
+                if inspect.iscoroutinefunction(fn)
+                else await asyncio.to_thread(fn, title, body, "warning")
+            )
         except TypeError:
-            res = await fn(title, body) if inspect.iscoroutinefunction(fn) else await asyncio.to_thread(fn, title, body)
+            res = (
+                await fn(title, body)
+                if inspect.iscoroutinefunction(fn)
+                else await asyncio.to_thread(fn, title, body)
+            )
         if inspect.isawaitable(res):
             await res
     except Exception:  # noqa: BLE001
@@ -133,7 +141,8 @@ async def start_takeover(
     await _send(
         notifier,
         f"Hulp nodig: {t.account}",
-        f"{reason or 'Handmatige actie vereist'}\nOpen de browser: {url}\nKlik daarna op 'Klaar' in de webinterface.",
+        f"{reason or 'Handmatige actie vereist'}\nOpen de browser: {url}\n"
+        "Klik daarna op 'Klaar' in de webinterface.",
     )
     return t
 
@@ -144,7 +153,9 @@ async def wait_takeover(t: Takeover, timeout: float = DEFAULT_TIMEOUT_S) -> Take
         await asyncio.wait_for(t.event.wait(), timeout)
     except TimeoutError:
         t.timed_out = True
-        raise TakeoverTimeout(f"takeover for {t.account} not completed within {timeout:.0f}s: {t.reason}") from None
+        raise TakeoverTimeout(
+            f"takeover for {t.account} not completed within {timeout:.0f}s: {t.reason}"
+        ) from None
     finally:
         _active.pop(t.id, None)
     return t

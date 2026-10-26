@@ -58,7 +58,9 @@ class BrowserSession:
         """``async with s.debug_bundle("x") as b`` bound to this session's page and recorder."""
         return debug_bundle(self.page, action, recorder=self.recorder, **kw)
 
-    async def takeover(self, reason: str, *, timeout: float | None = None, notifier: Notifier | None = None) -> Takeover:
+    async def takeover(
+        self, reason: str, *, timeout: float | None = None, notifier: Notifier | None = None
+    ) -> Takeover:
         """Ask a human to continue in the live browser; see :func:`takeover.request_takeover`."""
         kw: dict[str, Any] = {"notifier": notifier}
         if timeout is not None:
@@ -181,7 +183,12 @@ class BrowserRuntime:
             recorder.attach(context)
             page = context.pages[0] if context.pages else await context.new_page()
             yield BrowserSession(
-                account_id=key, context=context, page=page, recorder=recorder, profile_dir=profile, runtime=self
+                account_id=key,
+                context=context,
+                page=page,
+                recorder=recorder,
+                profile_dir=profile,
+                runtime=self,
             )
         finally:
             recorder.detach()

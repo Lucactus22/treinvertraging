@@ -105,7 +105,9 @@ class Bundle:
     ) -> None:
         self.page = page
         self.action = action
-        self.recorder = recorder if recorder is not None else (get_recorder(page) if page is not None else None)
+        self.recorder = (
+            recorder if recorder is not None else (get_recorder(page) if page is not None else None)
+        )
         self.debug_dir = debug_dir or default_debug_dir()
         self.want_trace = trace
         self.path: Path | None = None

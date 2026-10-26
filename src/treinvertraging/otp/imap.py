@@ -73,7 +73,12 @@ class ImapConfig:
         except KeyError as ex:
             raise ValueError(f"IMAP not configured: missing {ex.args[0]}") from None
         m: dict[str, Any] = {"host": host, "user": user, "password": password}
-        for key, name in (("port", "PORT"), ("folder", "FOLDER"), ("senders", "SENDERS"), ("code_regex", "CODE_REGEX")):
+        for key, name in (
+            ("port", "PORT"),
+            ("folder", "FOLDER"),
+            ("senders", "SENDERS"),
+            ("code_regex", "CODE_REGEX"),
+        ):
             if e.get(f"{prefix}{name}"):
                 m[key] = e[f"{prefix}{name}"]
         if e.get(f"{prefix}SSL"):
@@ -212,7 +217,9 @@ def fetch_messages_sync(cfg: ImapConfig, since: datetime, *, limit: int = 30) ->
                 continue
             for part in parts:
                 if isinstance(part, tuple) and isinstance(part[1], bytes):
-                    out.append(parse_message(part[1], uid=mid.decode() if isinstance(mid, bytes) else str(mid)))
+                    out.append(
+                        parse_message(part[1], uid=mid.decode() if isinstance(mid, bytes) else str(mid))
+                    )
                     break
         return out
     finally:
@@ -267,4 +274,3 @@ class ImapOtpProvider:
             if remaining <= 0:
                 raise OtpTimeout(f"no verification mail from {list(cfg.senders)} within {timeout:.0f}s")
             await asyncio.sleep(min(cfg.poll_interval, remaining))
-

@@ -1,3 +1,4 @@
+# ruff: noqa: F811  (pytest fixtures imported from tests.browser_utils)
 from __future__ import annotations
 
 import pytest
@@ -12,7 +13,9 @@ async def test_jitter_sleep_range() -> None:
     assert 0.01 <= d <= 0.03
 
 
-async def test_human_type_types_with_varying_delays(page_server: LocalServer, runtime: BrowserRuntime) -> None:
+async def test_human_type_types_with_varying_delays(
+    page_server: LocalServer, runtime: BrowserRuntime
+) -> None:
     async with runtime.session("h1") as s:
         await s.page.goto(page_server.url("/typing.html"))
         field = s.page.get_by_label("Naam")
@@ -45,7 +48,9 @@ async def test_human_click(page_server: LocalServer, runtime: BrowserRuntime) ->
     ("reject", "expected"),
     [(False, "accepted"), (True, "rejected")],
 )
-async def test_dismiss_onetrust(page_server: LocalServer, runtime: BrowserRuntime, reject: bool, expected: str) -> None:
+async def test_dismiss_onetrust(
+    page_server: LocalServer, runtime: BrowserRuntime, reject: bool, expected: str
+) -> None:
     async with runtime.session("h4") as s:
         await s.page.goto(page_server.url("/onetrust.html"))
         assert await human.dismiss_cookie_banner(s.page, reject=reject, timeout=2000)
@@ -72,5 +77,7 @@ async def test_dismiss_banner_absent(page_server: LocalServer, runtime: BrowserR
 async def test_dismiss_banner_custom_selectors(page_server: LocalServer, runtime: BrowserRuntime) -> None:
     async with runtime.session("h7") as s:
         await s.page.goto(page_server.url("/onetrust.html"))
-        assert await human.dismiss_cookie_banner(s.page, selectors=["#onetrust-reject-all-handler"], timeout=1500)
+        assert await human.dismiss_cookie_banner(
+            s.page, selectors=["#onetrust-reject-all-handler"], timeout=1500
+        )
         assert await s.page.title() == "rejected"

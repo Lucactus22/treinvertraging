@@ -1,3 +1,4 @@
+# ruff: noqa: F811  (pytest fixtures imported from tests.browser_utils)
 from __future__ import annotations
 
 import asyncio
@@ -22,7 +23,9 @@ async def test_session_basics(page_server: LocalServer, runtime: BrowserRuntime,
     assert not runtime.is_busy(7)
 
 
-async def test_profile_persists_cookies_between_sessions(page_server: LocalServer, runtime: BrowserRuntime) -> None:
+async def test_profile_persists_cookies_between_sessions(
+    page_server: LocalServer, runtime: BrowserRuntime
+) -> None:
     async with runtime.session("p1") as s:
         await s.page.goto(page_server.url("/plain.html"))
         await s.context.add_cookies(
@@ -38,7 +41,9 @@ async def test_profile_persists_cookies_between_sessions(page_server: LocalServe
         assert await s.context.cookies() == []
 
 
-async def test_same_account_sessions_are_serialised(page_server: LocalServer, runtime: BrowserRuntime) -> None:
+async def test_same_account_sessions_are_serialised(
+    page_server: LocalServer, runtime: BrowserRuntime
+) -> None:
     order: list[str] = []
 
     async def worker(name: str) -> None:
@@ -81,13 +86,17 @@ async def test_lock_released_after_exception(page_server: LocalServer, runtime: 
         await s.page.goto(page_server.url("/plain.html"))
 
 
-async def test_ephemeral_session_uses_gtbv_profile(page_server: LocalServer, runtime: BrowserRuntime, data_dir: Path) -> None:
+async def test_ephemeral_session_uses_gtbv_profile(
+    page_server: LocalServer, runtime: BrowserRuntime, data_dir: Path
+) -> None:
     async with runtime.ephemeral_session() as s:
         assert s.profile_dir == data_dir / "profiles" / "gtbv"
         await s.page.goto(page_server.url("/plain.html"))
 
 
-async def test_stale_singleton_lock_is_cleared(page_server: LocalServer, runtime: BrowserRuntime, data_dir: Path) -> None:
+async def test_stale_singleton_lock_is_cleared(
+    page_server: LocalServer, runtime: BrowserRuntime, data_dir: Path
+) -> None:
     prof = data_dir / "profiles" / "stale"
     prof.mkdir(parents=True)
     (prof / "SingletonLock").symlink_to("somehost-12345")  # dangling symlink, as Chromium leaves it
