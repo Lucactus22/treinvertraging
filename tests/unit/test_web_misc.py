@@ -75,7 +75,11 @@ def test_static_traversal_blocked(client: TestClient) -> None:
 # --- run page --------------------------------------------------------------------------------
 
 
-def test_run_stub_flash(client: TestClient) -> None:
+def test_run_stub_flash(client: TestClient, monkeypatch) -> None:
+    async def not_implemented() -> str:
+        raise NotImplementedError("stub")
+
+    monkeypatch.setattr(services, "run_sync", not_implemented)  # the UI must still cope with a stub
     r = client.post("/run/sync")
     assert r.status_code == 303 and r.headers["location"].startswith("/run?")
     assert "nog niet beschikbaar" in client.get(r.headers["location"]).text

@@ -56,7 +56,11 @@ def test_approve_is_not_repeatable(client: TestClient) -> None:
     assert _state(cid) == "approved"
 
 
-def test_retry_stub_shows_flash(client: TestClient) -> None:
+def test_retry_stub_shows_flash(client: TestClient, monkeypatch) -> None:
+    async def not_implemented(*args, **kwargs):
+        raise NotImplementedError("stub")
+
+    monkeypatch.setattr(services, "retry_claim", not_implemented)  # the UI must still cope with a stub
     cid = seed_claim("needs_human")
     r = client.post(f"/claims/{cid}/retry")
     assert r.status_code == 303
@@ -129,7 +133,7 @@ def test_dashboard_totals(client: TestClient) -> None:
     page = client.get("/").text
     assert "€ 12,50" in page and "€ 29,00" in page
     assert "wachten op jouw goedkeuring" in page
-    assert "Planning nog niet beschikbaar" in page
+    assert "Niets gepland" in page  # no scheduler runs inside the test client
 
 
 def test_dashboard_deadline_warning_and_canary(client: TestClient) -> None:
@@ -161,5 +165,3 @@ async def test_services_approve_reject_direct(web_env) -> None:
         await services.reject_claim(cid)
     with pytest.raises(services.ClaimNotFound):
         await services.approve_claim(12345)
-    with pytest.raises(NotImplementedError):
-        await services.run_sync()

@@ -92,7 +92,13 @@ def test_edit_form_prefills_without_secrets(client: TestClient) -> None:
     assert client.get("/accounts/999/edit").status_code == 404
 
 
-def test_test_login_and_calibrate_stub_show_flash(client: TestClient) -> None:
+def test_test_login_and_calibrate_stub_show_flash(client: TestClient, monkeypatch) -> None:
+    from treinvertraging import services
+
+    async def not_implemented(*args, **kwargs):
+        raise NotImplementedError("stub")
+
+    monkeypatch.setattr(services, "test_login", not_implemented)  # WP-G implemented it; UI must still cope
     client.post("/accounts", data=FORM)
     (acc,) = _accounts()
     r = client.post(f"/accounts/{acc.id}/test-login")
