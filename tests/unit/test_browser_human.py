@@ -18,8 +18,8 @@ async def test_human_type_types_with_varying_delays(page_server: LocalServer, ru
         field = s.page.get_by_label("Naam")
         await human.human_type(field, "Jan de Vries", min_delay_ms=20, max_delay_ms=60)
         assert await field.input_value() == "Jan de Vries"  # old value cleared
-        times = await s.page.evaluate("window.keyTimes")
-        assert len(times) >= len("Jan de Vries")
+        times = (await s.page.evaluate("window.keyTimes"))[-len("Jan de Vries") :]  # skip Ctrl+A/Backspace
+        assert len(times) == len("Jan de Vries")
         gaps = [b - a for a, b in zip(times, times[1:], strict=False)]
         assert min(gaps) >= 10  # ms; typed one by one, not instantly
         assert len({round(g) for g in gaps}) > 3  # jittered, not constant
