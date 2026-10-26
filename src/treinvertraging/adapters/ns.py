@@ -1089,8 +1089,8 @@ class NsAdapter:
                 value = await _read_field(item, fields.get(name, ""))
                 if value:
                     rec[key] = value
-            if fields.get("delay"):
-                rec["delayed"] = await item.locator(fields["delay"]).count() > 0
+            if fields.get("delay") and await item.locator(fields["delay"]).count() > 0:
+                rec["delayed"] = True  # absence proves nothing, so the flag stays None
             ref = await _read_field(item, fields.get("claim_link", ""))
             if ref:
                 rec["claimUrl"] = ref

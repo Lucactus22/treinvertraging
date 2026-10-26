@@ -403,7 +403,7 @@ async def run_reconcile(
             rec = Record(reference=ref, status=ClaimState.CONFIRMED, source="confirmation mail")
             _apply(s, pick, rec, result, notices)
         # 3. stale submitting claims
-        for claim, trip in live_pairs:
+        for claim, _trip in live_pairs:
             if claim.state != ClaimState.SUBMITTING.value:
                 continue
             if now - as_utc(claim.updated_at) < stale_after:
@@ -428,8 +428,12 @@ async def run_reconcile(
                 claim.state = ClaimState.NEEDS_HUMAN.value
                 claim.last_error = f"niet teruggevonden bij NS na {claim.attempts} pogingen"
                 result.needs_human += 1
-                add_event(s, "reconcile.needs_human", claim.last_error, level="error", trip_key=claim.trip_key)
-                notices.append(("Claim vraagt om aandacht", f"Claim #{claim.id}: {claim.last_error}", "error"))
+                add_event(
+                    s, "reconcile.needs_human", claim.last_error, level="error", trip_key=claim.trip_key
+                )
+                notices.append(
+                    ("Claim vraagt om aandacht", f"Claim #{claim.id}: {claim.last_error}", "error")
+                )
             else:
                 claim.state = ClaimState.APPROVED.value
                 claim.last_error = "niet teruggevonden bij NS; opnieuw ingepland"

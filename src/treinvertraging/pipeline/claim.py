@@ -48,7 +48,13 @@ from treinvertraging.adapters.base import ClaimantInfo, ClaimSubmitter
 from treinvertraging.config import get_settings
 from treinvertraging.db import session_scope
 from treinvertraging.domain import ClaimState, SubmitResult
-from treinvertraging.errors import BlockedByBotProtection, InvalidInput, LayoutChanged, LoginRequired, TakeoverTimeout
+from treinvertraging.errors import (
+    BlockedByBotProtection,
+    InvalidInput,
+    LayoutChanged,
+    LoginRequired,
+    TakeoverTimeout,
+)
 from treinvertraging.models import Account, Assessment, Claim, Event, Trip
 from treinvertraging.pipeline.context import (
     MAX_ATTEMPTS,
@@ -208,7 +214,11 @@ async def run_deadline_watchdog(*, today: date | None = None, notify: bool = Tru
                 claim.last_error = f"deadline {a.deadline.isoformat()} passed"
                 expired.append(f"{label}: deadline was {a.deadline:%d-%m-%Y}")
                 add_event(
-                    s, "claim.expired", f"deadline {a.deadline} passed", level="error", trip_key=claim.trip_key
+                    s,
+                    "claim.expired",
+                    f"deadline {a.deadline} passed",
+                    level="error",
+                    trip_key=claim.trip_key,
                 )
             elif today <= a.deadline <= today + timedelta(days=DEADLINE_WARNING_DAYS):
                 days = (a.deadline - today).days
@@ -320,7 +330,9 @@ async def _attempt(
             last_error = exc
             if _reached_final(exc):
                 return None, exc, debug_dir, False
-            log.warning("channel %s failed (%s); trying the next channel", submitter.channel, type(exc).__name__)
+            log.warning(
+                "channel %s failed (%s); trying the next channel", submitter.channel, type(exc).__name__
+            )
             with session_scope() as s:
                 add_event(
                     s,
@@ -514,7 +526,11 @@ async def run_claim(
                 claim.state = ClaimState.EXPIRED.value
                 claim.last_error = f"deadline {a.deadline.isoformat()} passed"
                 add_event(
-                    s, "claim.expired", f"deadline {a.deadline} passed", level="error", trip_key=claim.trip_key
+                    s,
+                    "claim.expired",
+                    f"deadline {a.deadline} passed",
+                    level="error",
+                    trip_key=claim.trip_key,
                 )
                 result.expired += 1
                 continue
@@ -541,9 +557,7 @@ async def run_claim(
         states = [ClaimState.APPROVED.value]
         if rehearse or run_mode == "auto":
             states.append(ClaimState.ELIGIBLE.value)
-        candidates = list(
-            s.scalars(select(Claim).where(Claim.state.in_(states)).order_by(Claim.id))
-        )
+        candidates = list(s.scalars(select(Claim).where(Claim.state.in_(states)).order_by(Claim.id)))
         queue: list[tuple[date, int]] = []
         for claim in candidates:
             if rehearse and not dry_run:

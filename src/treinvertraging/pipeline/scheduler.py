@@ -343,9 +343,7 @@ class PipelineScheduler:
             return job.next_run_time
         return self.plan_random_job(job_id, tomorrow=False, now=now)
 
-    def plan_random_job(
-        self, job_id: str, *, tomorrow: bool, now: datetime | None = None
-    ) -> datetime | None:
+    def plan_random_job(self, job_id: str, *, tomorrow: bool, now: datetime | None = None) -> datetime | None:
         """(Re)plan ``job_id`` at a random minute inside RUN_WINDOW. Returns the chosen time."""
         assert self.scheduler is not None
         tz = local_tz()
@@ -394,4 +392,3 @@ def get_scheduler() -> PipelineScheduler | None:
 def set_scheduler(scheduler: PipelineScheduler | None) -> None:
     global _current
     _current = scheduler
-

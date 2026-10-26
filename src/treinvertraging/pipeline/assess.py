@@ -38,7 +38,8 @@ from decimal import Decimal
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from treinvertraging import crypto, rules as rules_mod
+from treinvertraging import crypto
+from treinvertraging import rules as rules_mod
 from treinvertraging.db import session_scope
 from treinvertraging.delaydata import matcher, rdt
 from treinvertraging.domain import ClaimState, Source
@@ -269,9 +270,17 @@ def _write_assessment(
 
 
 def _mark_duplicate(
-    session: Session, trip: Trip, claim: Claim, canonical: Trip, rules: rules_mod.Rules, now: datetime, why: str
+    session: Session,
+    trip: Trip,
+    claim: Claim,
+    canonical: Trip,
+    rules: rules_mod.Rules,
+    now: datetime,
+    why: str,
 ) -> None:
-    deadline = rules_mod.add_months(as_utc(trip.checkin_at).astimezone(local_tz()).date(), rules.deadline_months)
+    deadline = rules_mod.add_months(
+        as_utc(trip.checkin_at).astimezone(local_tz()).date(), rules.deadline_months
+    )
     reason = f"duplicate: {why} (trip {canonical.key[:8]})"
     _write_assessment(
         session,

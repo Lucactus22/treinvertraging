@@ -69,7 +69,9 @@ async def run_canary(
         result.debug_dir = result.debug_dir or find_debug_dir(started)
     message = result.summary() + (f" (debug: {result.debug_dir})" if result.debug_dir else "")
     with session_scope() as s:
-        add_event(s, "canary.ok" if result.ok else "canary.failed", message, level="info" if result.ok else "error")
+        add_event(
+            s, "canary.ok" if result.ok else "canary.failed", message, level="info" if result.ok else "error"
+        )
     if not result.ok and notify:
         shot = None
         if result.debug_dir:
