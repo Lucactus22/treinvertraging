@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<h1>Dashboard</h1>
+<div class="grid">
+  <div class="card stat"><div class="num">{{ stats.pending_eur|eur }}</div><div class="lbl">Nog te claimen (in aanmerking / goedkeuring)</div></div>
+  <div class="card stat"><div class="num">{{ stats.claimed_eur|eur }}</div><div class="lbl">Geclaimd (ingediend, bevestigd, uitbetaald)</div></div>
+  <div class="card stat"><div class="num">{{ stats.paid_eur|eur }}</div><div class="lbl">Uitbetaald</div></div>
+  <div class="card stat"><div class="num">{{ stats.trips_total }}</div><div class="lbl">Reizen bijgehouden</div></div>
+</div>
+
+{% if stats.awaiting_approval %}
+<div class="banner takeover">
+  {{ stats.awaiting_approval }} claim(s) wachten op jouw goedkeuring. <a href="/claims">Bekijk claims</a>
+</div>
+{% endif %}
+
+{% if stats.deadlines %}
+<div class="card">
+  <h2 style="margin-top:0">Deadlines binnen 14 dagen</h2>
+  <ul class="plain">
+  {% for trip, deadline, days in stats.deadlines %}
+    <li>{{ trip.checkin_at|local("%d-%m") }} {{ trip.from_station }} &rarr; {{ trip.to_station or "?" }}:
+      uiterlijk {{ deadline.strftime("%d-%m-%Y") }}
+      ({% if days < 0 %}verlopen{% else %}nog {{ days }} dag{{ "en" if days != 1 }}{% endif %})</li>
+  {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+<div class="grid">
+  <div class="card">
+    <h2 style="margin-top:0">Status</h2>
+    <p>Modus: <strong>{{ claim_mode }}</strong></p>
+    <p>Canary:
+      {% if stats.canary %}
+        <span class="badge {{ 'rejected' if stats.canary.level in ('error','critical') else 'confirmed' }}">
+          {{ stats.canary.level }}</span>
+        {{ stats.canary.ts|local }} <span class="muted">{{ stats.canary.message }}</span>
+      {% else %}<span class="muted">nog niet uitgevoerd</span>{% endif %}
+    </p>
+    <h2>Volgende runs</h2>
+    {% if runs is none %}<p class="muted">Planning nog niet beschikbaar.</p>
+    {% elif not runs %}<p class="muted">Niets gepland.</p>
+    {% else %}
+    <ul class="plain">
+      {% for r in runs %}<li>{{ r.job }}: {{ r.next_run|local if r.next_run else "-" }}</li>{% endfor %}
+    </ul>
+    {% endif %}
+  </div>
+  <div class="card">
+    <h2 style="margin-top:0">Claims per status</h2>
+    {% if stats.counts %}
+    <ul class="plain">
+      {% for state, n in stats.counts.items()|sort %}
+      <li>{{ state_label(state) }}: {{ n }}</li>{% endfor %}
+    </ul>
+    {% else %}<p class="muted">Nog geen claims.</p>{% endif %}
+  </div>
+</div>
+
+<h2>Recente gebeurtenissen</h2>
+<div class="table-wrap"><table>
+  <tr><th>Tijd</th><th>Niveau</th><th>Soort</th><th>Bericht</th></tr>
+  {% for e in stats.recent_events %}
+  <tr><td>{{ e.ts|local }}</td><td>{{ e.level }}</td><td>{{ e.kind }}</td><td>{{ e.message }}</td></tr>
+  {% else %}<tr><td colspan="4" class="muted">Nog niets gebeurd.</td></tr>{% endfor %}
+</table></div>
+{% endblock %}

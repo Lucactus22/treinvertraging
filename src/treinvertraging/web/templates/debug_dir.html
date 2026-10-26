@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Debug{% endblock %}
+{% block content %}
+<h1>Debug-bundels{% if rel %}: {{ rel }}{% endif %}</h1>
+{% if rel %}<p><a href="/debug/{{ rel.rsplit('/', 1)[0] if '/' in rel else '' }}">&larr; omhoog</a></p>{% endif %}
+<ul class="plain">
+  {% for i in items %}<li><a href="{{ i.url }}">{{ i.name }}</a></li>
+  {% else %}<li class="muted">Leeg.</li>{% endfor %}
+</ul>
+{% endblock %}

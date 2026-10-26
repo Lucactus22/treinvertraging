@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Account{% endblock %}
+{% block content %}
+<h1>{{ "Account wijzigen" if account else "Account toevoegen" }}</h1>
+{% for e in errors %}<div class="flash error">{{ e }}</div>{% endfor %}
+<form class="card" method="post" action="{{ '/accounts/%d' % account.id if account else '/accounts' }}">
+  <label for="source">Bron</label>
+  <select id="source" name="source">
+    <option value="ns" {% if form.source == "ns" %}selected{% endif %}>Mijn NS</option>
+    <option value="ovchip" {% if form.source == "ovchip" %}selected{% endif %}>OV-chipkaart</option>
+  </select>
+  <label for="label">Naam</label>
+  <input id="label" name="label" value="{{ form.label }}" required>
+  <label for="username">Gebruikersnaam (e-mailadres){{ " - leeg laten om te behouden" if account }}</label>
+  <input id="username" name="username" value="{{ form.username }}" autocomplete="off">
+  <label for="password">Wachtwoord{{ " - leeg laten om te behouden" if account }}</label>
+  <input id="password" name="password" type="password" autocomplete="new-password">
+  <label for="card_number">OV-chipkaartnummer (16 cijfers){% if card_hint %} - huidig: &bull;&bull;&bull;&bull; {{ card_hint }}{% endif %}</label>
+  <input id="card_number" name="card_number" inputmode="numeric" autocomplete="off" placeholder="3528 ...">
+  <label for="holder_name">Naam rekeninghouder</label>
+  <input id="holder_name" name="holder_name" value="{{ form.holder_name }}">
+  <label for="iban">IBAN{% if iban_hint %} - huidig: &bull;&bull;&bull;&bull; {{ iban_hint }}{% endif %}</label>
+  <input id="iban" name="iban" autocomplete="off" placeholder="NL00 BANK 0000 0000 00">
+  <label for="email">E-mailadres voor de claim</label>
+  <input id="email" name="email" type="email" value="{{ form.email }}">
+  <label for="otp_provider">Verificatiecode (OTP)</label>
+  <select id="otp_provider" name="otp_provider">
+    <option value="manual" {% if form.otp_provider == "manual" %}selected{% endif %}>Handmatig invoeren in deze webinterface</option>
+    <option value="imap" {% if form.otp_provider == "imap" %}selected{% endif %}>Automatisch uit e-mail (IMAP)</option>
+  </select>
+  <label class="check"><input type="checkbox" name="enabled" value="1" {% if form.enabled %}checked{% endif %}> Actief</label>
+  <p><button class="primary" type="submit">Opslaan</button> <a class="btn" href="/accounts">Annuleren</a></p>
+</form>
+{% endblock %}

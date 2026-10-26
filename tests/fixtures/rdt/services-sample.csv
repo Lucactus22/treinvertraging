@@ -1,0 +1,39 @@
+Service:RDT-ID,Service:Date,Service:Type,Service:Company,Service:Train number,Service:Completely cancelled,Service:Partly cancelled,Service:Maximum delay,Stop:RDT-ID,Stop:Station code,Stop:Station name,Stop:Arrival time,Stop:Arrival delay,Stop:Arrival cancelled,Stop:Departure time,Stop:Departure delay,Stop:Departure cancelled,Stop:Platform change,Stop:Planned platform,Stop:Actual platform
+17000001,2025-09-01,Intercity,NS,3045,false,false,34,160000001,UT,Utrecht Centraal,,,,2025-09-01T14:02:00+02:00,33,false,false,18,18
+17000001,2025-09-01,Intercity,NS,3045,false,false,34,160000002,SHL,Schiphol Airport,2025-09-01T14:20:00+02:00,34,false,2025-09-01T14:21:00+02:00,34,false,false,,
+17000001,2025-09-01,Intercity,NS,3045,false,false,34,160000003,ASD,Amsterdam Centraal,2025-09-01T14:30:00+02:00,34,false,,,,false,5a,5a
+17000002,2025-09-01,Intercity,NS,3047,false,false,0,160000004,UT,Utrecht Centraal,,,,2025-09-01T14:17:00+02:00,0,false,false,18,18
+17000002,2025-09-01,Intercity,NS,3047,false,false,0,160000005,ASD,Amsterdam Centraal,2025-09-01T14:45:00+02:00,0,false,,,,false,5b,5b
+17000003,2025-09-01,Intercity,NS,3049,false,true,0,160000006,UT,Utrecht Centraal,,,,2025-09-01T14:47:00+02:00,0,true,false,18,18
+17000003,2025-09-01,Intercity,NS,3049,false,true,0,160000007,ASD,Amsterdam Centraal,2025-09-01T15:15:00+02:00,0,true,,,,false,5a,5a
+17000004,2025-09-01,Intercity,NS,3051,false,false,2,160000008,UT,Utrecht Centraal,,,,2025-09-01T15:17:00+02:00,1,false,false,18,18
+17000004,2025-09-01,Intercity,NS,3051,false,false,2,160000009,ASD,Amsterdam Centraal,2025-09-01T15:45:00+02:00,2,false,,,,false,5b,5b
+17000005,2025-09-01,Intercity direct,NS,1750,false,false,5,160000010,RTD,Rotterdam Centraal,,,,2025-09-01T10:03:00+02:00,0,false,false,14,14
+17000005,2025-09-01,Intercity direct,NS,1750,false,false,5,160000011,ASD,Amsterdam Centraal,2025-09-01T10:40:00+02:00,5,false,,,,false,15,15
+17000006,2025-09-01,Intercity direct,NS,1751,false,false,31,160000012,ASD,Amsterdam Centraal,,,,2025-09-01T11:00:00+02:00,0,false,false,15,15
+17000006,2025-09-01,Intercity direct,NS,1751,false,false,31,160000013,RTD,Rotterdam Centraal,2025-09-01T11:35:00+02:00,31,false,,,,false,14,14
+17000007,2025-09-01,Intercity,NS,2250,true,false,0,160000014,RTD,Rotterdam Centraal,,,,2025-09-01T15:40:00+02:00,0,true,false,9,9
+17000007,2025-09-01,Intercity,NS,2250,true,false,0,160000015,GVC,Den Haag Centraal,2025-09-01T16:10:00+02:00,0,true,,,,false,1,1
+17000008,2025-09-01,Intercity,NS,2252,false,false,3,160000016,RTD,Rotterdam Centraal,,,,2025-09-01T15:55:00+02:00,0,false,false,9,9
+17000008,2025-09-01,Intercity,NS,2252,false,false,3,160000017,GVC,Den Haag Centraal,2025-09-01T16:22:00+02:00,3,false,,,,false,2,2
+17000009,2025-09-01,Sprinter,NS,5050,false,false,1,160000018,UT,Utrecht Centraal,,,,2025-09-01T09:08:00+02:00,0,false,false,9,9
+17000009,2025-09-01,Sprinter,NS,5050,false,false,1,160000019,AMF,Amersfoort Centraal,2025-09-01T09:25:00+02:00,1,false,2025-09-01T09:26:00+02:00,1,false,false,,
+17000009,2025-09-01,Sprinter,NS,5050,false,false,1,160000020,ZL,Zwolle,2025-09-01T10:14:00+02:00,0,false,,,,false,,
+17000010,2025-09-01,Sprinter,NS,5052,false,false,7,160000021,UT,Utrecht Centraal,,,,2025-09-01T09:38:00+02:00,0,false,false,9,9
+17000010,2025-09-01,Sprinter,NS,5052,false,false,7,160000022,AMF,Amersfoort Centraal,2025-09-01T09:55:00+02:00,0,false,2025-09-01T09:56:00+02:00,0,false,false,,
+17000010,2025-09-01,Sprinter,NS,5052,false,false,7,160000023,ZL,Zwolle,2025-09-01T10:44:00+02:00,7,false,,,,false,,
+17000011,2025-09-01,Sprinter,NS,4350,false,false,2,160000024,HT,'s-Hertogenbosch,,,,2025-09-01T12:02:00+02:00,0,false,false,,
+17000011,2025-09-01,Sprinter,NS,4350,false,false,2,160000025,UT,Utrecht Centraal,2025-09-01T12:26:00+02:00,0,false,2025-09-01T12:28:00+02:00,1,false,false,,
+17000011,2025-09-01,Sprinter,NS,4350,false,false,2,160000026,AH,"Arnhem, Centraal",2025-09-01T13:05:00+02:00,2,false,,,,false,,
+17000012,2025-09-01,Intercity,NS,2150,false,false,0,160000027,UT,Utrecht Centraal,,,,2025-09-01T12:10:00+02:00,0,false,false,,
+17000012,2025-09-01,Intercity,NS,2150,false,false,0,160000028,AH,"Arnhem, Centraal",2025-09-01T12:48:00+02:00,0,false,,,,false,,
+17000013,2025-09-01,Intercity,NS,1080,false,false,8,160000029,ASD,Amsterdam Centraal,,,,2025-09-01T23:30:00+02:00,0,false,false,,
+17000013,2025-09-01,Intercity,NS,1080,false,false,8,160000030,UT,Utrecht Centraal,2025-09-02T00:12:00+02:00,8,false,,,,false,,
+17000014,2025-09-01,ICE International,DB,141,false,false,12,160000031,ASD,Amsterdam Centraal,,,,2025-09-01T08:30:00+02:00,0,false,false,4,4
+17000014,2025-09-01,ICE International,DB,141,false,false,12,160000032,UT,Utrecht Centraal,2025-09-01T08:55:00+02:00,12,false,2025-09-01T08:58:00+02:00,12,false,false,19,19
+17000015,2025-10-01,Intercity,NS,3045,false,false,0,160000033,UT,Utrecht Centraal,,,,2025-10-01T14:02:00+02:00,0,false,false,,
+17000015,2025-10-01,Intercity,NS,3045,false,false,0,160000034,ASD,Amsterdam Centraal,2025-10-01T14:30:00+02:00,0,false,,,,false,,
+17000016,2025-10-01,Intercity,NS,3047,false,false,41,160000035,UT,Utrecht Centraal,,,,2025-10-01T14:17:00+02:00,40,false,false,,
+17000016,2025-10-01,Intercity,NS,3047,false,false,41,160000036,ASD,Amsterdam Centraal,2025-10-01T14:45:00+02:00,41,false,,,,false,,
+17000017,2025-10-02,Intercity,NS,3045,false,false,3,160000037,UT,Utrecht Centraal,,,,2025-10-02T14:02:00+02:00,0,false,false,,
+17000017,2025-10-02,Intercity,NS,3045,false,false,3,160000038,ASD,Amsterdam Centraal,2025-10-02T14:30:00+02:00,3,false,,,,false,,

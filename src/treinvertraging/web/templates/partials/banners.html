@@ -1,0 +1,17 @@
+{% for t in takeovers %}
+<div class="banner takeover" role="alert">
+  <strong>Handmatige overname nodig</strong>{% if t.who %} ({{ t.who }}){% endif %}:
+  {{ t.reason or "de bot heeft hulp nodig" }}.
+  <a href="{{ novnc }}" target="_blank" rel="noopener">Open de live browser (noVNC)</a>,
+  klik door en kom hier terug.
+  <form class="inline" method="post" action="/takeover/{{ t.id }}/done">
+    <button class="primary" type="submit">Klaar</button>
+  </form>
+</div>
+{% endfor %}
+{% for p in prompts %}
+<div class="banner otp" role="alert">
+  <strong>Verificatiecode nodig</strong>{% if p.who %} voor {{ p.who }}{% endif %}.
+  <a href="/otp">Code invoeren</a>
+</div>
+{% endfor %}

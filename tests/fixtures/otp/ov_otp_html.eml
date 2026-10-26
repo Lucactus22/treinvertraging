@@ -1,0 +1,17 @@
+From: =?utf-8?q?OV-chipkaart?= <noreply@ov-chipkaart.nl>
+To: jan@example.com
+Subject: Inlogcode OV-chipkaart
+Date: Mon, 26 Oct 2026 10:02:30 +0100
+Message-ID: <otp2@ov-chipkaart.nl>
+MIME-Version: 1.0
+Content-Type: multipart/alternative; boundary="BOUNDARY"
+
+--BOUNDARY
+Content-Type: text/html; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
+
+<html><head><style>body { color: #123456; }</style></head><body>
+<p>Je eenmalige code:</p><p style=3D"font-size:24px"><b>7=
+35=
+190</b></p><p>Geldig 5 minuten.</p></body></html>
+--BOUNDARY--

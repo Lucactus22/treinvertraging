@@ -1,0 +1,57 @@
+:root {
+  --bg: #f5f6f8; --card: #fff; --text: #1d2330; --muted: #667085; --line: #e4e7ec;
+  --accent: #003082; --accent-text: #fff; --ok: #067647; --ok-bg: #ecfdf3;
+  --warn: #93370d; --warn-bg: #fffaeb; --err: #b42318; --err-bg: #fef3f2; --info-bg: #eff4ff;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #101828; --card: #1b2333; --text: #eef0f4; --muted: #98a2b3; --line: #2f3a4f;
+    --accent: #7aa2ff; --accent-text: #0b1220; --ok: #6ce9a6; --ok-bg: #0b3b27;
+    --warn: #fec84b; --warn-bg: #3d2e07; --err: #fda29b; --err-bg: #4a1511; --info-bg: #16284d;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 system-ui, sans-serif; }
+a { color: var(--accent); }
+header.top { background: var(--accent); color: var(--accent-text); padding: 0 16px; }
+header.top nav { display: flex; flex-wrap: wrap; gap: 4px 16px; align-items: center; max-width: 1200px; margin: 0 auto; }
+header.top .brand { font-weight: 700; padding: 12px 0; margin-right: 12px; }
+header.top a { color: var(--accent-text); text-decoration: none; padding: 12px 0; opacity: .85; }
+header.top a:hover, header.top a.active { opacity: 1; border-bottom: 2px solid currentColor; }
+main { max-width: 1200px; margin: 0 auto; padding: 16px; }
+h1 { font-size: 1.5rem; margin: .5rem 0 1rem; }
+h2 { font-size: 1.15rem; margin: 1.5rem 0 .5rem; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+.grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); margin-bottom: 16px; }
+.stat .num { font-size: 1.7rem; font-weight: 700; }
+.stat .lbl, .muted { color: var(--muted); font-size: .9rem; }
+table { width: 100%; border-collapse: collapse; background: var(--card); }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: .8rem; text-transform: uppercase; color: var(--muted); letter-spacing: .03em; }
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; }
+.badge { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: .8rem; background: var(--info-bg); }
+.badge.paid, .badge.confirmed, .badge.submitted, .badge.approved { background: var(--ok-bg); color: var(--ok); }
+.badge.awaiting_approval, .badge.needs_human, .badge.submitting { background: var(--warn-bg); color: var(--warn); }
+.badge.rejected, .badge.expired { background: var(--err-bg); color: var(--err); }
+.flash, .banner { padding: 10px 14px; border-radius: 8px; margin-bottom: 12px; border: 1px solid var(--line); background: var(--info-bg); }
+.flash.success { background: var(--ok-bg); color: var(--ok); }
+.flash.warning, .banner.takeover { background: var(--warn-bg); color: var(--warn); }
+.flash.error, .banner.error { background: var(--err-bg); color: var(--err); }
+.banner.otp { background: var(--info-bg); }
+button, .btn { font: inherit; cursor: pointer; padding: 6px 14px; border-radius: 8px; border: 1px solid var(--line);
+  background: var(--card); color: var(--text); text-decoration: none; display: inline-block; }
+button.primary, .btn.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+button.danger { color: var(--err); }
+form.inline { display: inline; }
+label { display: block; margin: 10px 0 4px; font-weight: 600; }
+input[type=text], input[type=password], input[type=email], input:not([type]), select {
+  font: inherit; width: 100%; max-width: 420px; padding: 7px 10px; border: 1px solid var(--line);
+  border-radius: 8px; background: var(--bg); color: var(--text); }
+label.check { font-weight: normal; display: flex; gap: 8px; align-items: center; }
+.tabs a { display: inline-block; padding: 4px 12px; margin-right: 6px; border-radius: 999px; border: 1px solid var(--line); text-decoration: none; }
+.tabs a.active { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+pre.log { background: #0b1220; color: #d0d5dd; padding: 12px; border-radius: 8px; height: 360px; overflow: auto; font-size: .8rem; white-space: pre-wrap; }
+ul.plain { margin: 0; padding-left: 18px; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.thumbs img { height: 60px; border: 1px solid var(--line); border-radius: 4px; margin-right: 4px; }
+@media (max-width: 640px) { main { padding: 12px; } }

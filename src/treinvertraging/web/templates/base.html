@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ app_name }}{% endblock %} - {{ app_name }}</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+</head>
+<body>
+<header class="top">
+  {% set path = request.url.path %}
+  <nav>
+    <span class="brand">Treinvertraging</span>
+    <a href="/" {% if path == '/' %}class="active"{% endif %}>Dashboard</a>
+    <a href="/trips" {% if path.startswith('/trips') %}class="active"{% endif %}>Reizen</a>
+    <a href="/claims" {% if path.startswith('/claims') %}class="active"{% endif %}>Claims</a>
+    <a href="/accounts" {% if path.startswith('/accounts') %}class="active"{% endif %}>Accounts</a>
+    <a href="/run" {% if path.startswith('/run') %}class="active"{% endif %}>Uitvoeren</a>
+    <a href="/debug/" {% if path.startswith('/debug') %}class="active"{% endif %}>Debug</a>
+  </nav>
+</header>
+<main>
+  {% if poll_banners is not defined or poll_banners %}
+  <div id="banners" hx-get="/partials/banners" hx-trigger="load, every 5s" hx-swap="innerHTML"></div>
+  {% endif %}
+  <div id="flash">{% if flash %}{% include "partials/flash.html" %}{% endif %}</div>
+  {% block content %}{% endblock %}
+</main>
+</body>
+</html>

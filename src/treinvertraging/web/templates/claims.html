@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Claims{% endblock %}
+{% block content %}
+<h1>Claims</h1>
+<div class="table-wrap"><table>
+  <tr><th>#</th><th>Reis</th><th>Bedrag</th><th>Status</th><th>Kanaal / referentie</th><th>Debug</th><th>Acties</th></tr>
+  {% for it in items %}
+  {% set c = it.claim %}{% set t = c.trip %}
+  <tr>
+    <td>{{ c.id }}</td>
+    <td>{{ t.checkin_at|local }}<br>{{ t.from_station }} &rarr; {{ t.to_station or "?" }}
+      {% if it.assessment %}<div class="muted">{{ it.assessment.percent }}%
+        {% if it.assessment.arrival_delay_min is not none %}({{ it.assessment.arrival_delay_min }} min){% endif %}</div>{% endif %}</td>
+    <td>{{ c.expected_eur|eur if c.expected_eur is not none else "-" }}
+      {% if c.paid_eur is not none %}<div class="muted">betaald {{ c.paid_eur|eur }}</div>{% endif %}</td>
+    <td><span class="badge {{ c.state }}">{{ state_label(c.state) }}</span>
+      {% if c.last_error %}<div class="muted">{{ c.last_error }}</div>{% endif %}
+      {% if c.attempts %}<div class="muted">{{ c.attempts }} poging(en)</div>{% endif %}</td>
+    <td>{{ c.channel or "-" }}{% if c.reference %}<div class="muted">{{ c.reference }}</div>{% endif %}</td>
+    <td class="thumbs">
+      {% for f in it.files %}
+        {% if f.image %}<a href="{{ f.url }}" target="_blank"><img src="{{ f.url }}" alt="{{ f.name }}" loading="lazy"></a>
+        {% else %}<a href="{{ f.url }}" target="_blank">{{ f.name }}</a><br>{% endif %}
+      {% endfor %}
+    </td>
+    <td>
+      {% if c.state == "awaiting_approval" %}
+      <form class="inline" method="post" action="/claims/{{ c.id }}/approve"><button class="primary" type="submit">Goedkeuren</button></form>
+      <form class="inline" method="post" action="/claims/{{ c.id }}/reject"><button class="danger" type="submit">Afwijzen</button></form>
+      {% endif %}
+      {% if c.state in ("needs_human", "rejected", "expired") %}
+      <form class="inline" method="post" action="/claims/{{ c.id }}/retry"><button type="submit">Opnieuw proberen</button></form>
+      {% endif %}
+    </td>
+  </tr>
+  {% else %}<tr><td colspan="7" class="muted">Nog geen claims.</td></tr>{% endfor %}
+</table></div>
+{% endblock %}

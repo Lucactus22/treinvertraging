@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Reizen{% endblock %}
+{% block content %}
+<h1>Reizen</h1>
+<p class="tabs">
+  {% for key, label in filters.items() %}
+  <a href="/trips?filter={{ key }}" {% if key == filter %}class="active"{% endif %}>{{ label }}</a>
+  {% endfor %}
+</p>
+<div class="table-wrap"><table>
+  <tr><th>Check-in</th><th>Reis</th><th>Tarief</th><th>Vertraging</th><th>Bewijs</th><th>Vergoeding</th><th>Status</th><th>Deadline</th></tr>
+  {% for r in rows %}
+  {% set t = r.trip %}{% set a = r.assessment %}
+  <tr>
+    <td>{{ t.checkin_at|local }}<div class="muted">{{ t.source }}</div></td>
+    <td>{{ t.from_station }} &rarr; {{ t.to_station or "?" }}<div class="muted">{{ t.product or "" }}</div></td>
+    <td>{{ t.fare_eur|eur if t.fare_eur is not none else "-" }}</td>
+    <td>{% if a %}{% if a.cancelled %}geannuleerd{% elif a.arrival_delay_min is not none %}{{ a.arrival_delay_min }} min{% else %}onbekend{% endif %}{% else %}-{% endif %}</td>
+    <td>{% if a and a.evidence %}<ul class="plain">{% for ev in a.evidence %}<li>{{ ev }}</li>{% endfor %}</ul>{% endif %}
+        {% if a and a.reason %}<div class="muted">{{ a.reason }}</div>{% endif %}</td>
+    <td>{% if a %}{{ a.percent }}% = {{ a.expected_eur|eur }}{% else %}-{% endif %}</td>
+    <td>{% if r.claim %}<span class="badge {{ r.claim.state }}">{{ state_label(r.claim.state) }}</span>{% else %}-{% endif %}</td>
+    <td>{{ a.deadline.strftime("%d-%m-%Y") if a else "-" }}</td>
+  </tr>
+  {% else %}<tr><td colspan="8" class="muted">Geen reizen gevonden.</td></tr>{% endfor %}
+</table></div>
+{% endblock %}

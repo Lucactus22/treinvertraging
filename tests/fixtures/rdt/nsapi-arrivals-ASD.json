@@ -1,0 +1,62 @@
+{
+  "_comment": "SYNTHETIC: plausible NS Reisinformatie API v2 /arrivals?station=ASD response, not recorded from the real API.",
+  "payload": {
+    "source": "PPV",
+    "arrivals": [
+      {
+        "origin": "Utrecht Centraal",
+        "name": "NS 3045",
+        "plannedDateTime": "2026-10-26T14:30:00+0100",
+        "plannedTimeZoneOffset": 60,
+        "actualDateTime": "2026-10-26T15:04:00+0100",
+        "actualTimeZoneOffset": 60,
+        "plannedTrack": "5a",
+        "actualTrack": "5a",
+        "product": {
+          "number": "3045",
+          "categoryCode": "IC",
+          "shortCategoryName": "NS Intercity",
+          "longCategoryName": "Intercity",
+          "operatorCode": "NS",
+          "operatorName": "NS",
+          "type": "TRAIN"
+        },
+        "trainCategory": "IC",
+        "cancelled": false,
+        "messages": [{"text": "Rond 34 minuten vertraging", "type": "DELAY"}],
+        "arrivalStatus": "INCOMING"
+      },
+      {
+        "origin": "Utrecht Centraal",
+        "name": "NS 3049",
+        "plannedDateTime": "2026-10-26T15:15:00+0100",
+        "plannedTimeZoneOffset": 60,
+        "actualDateTime": "2026-10-26T15:15:00+0100",
+        "actualTimeZoneOffset": 60,
+        "plannedTrack": "5a",
+        "product": {"number": "3049", "categoryCode": "IC", "operatorName": "NS", "type": "TRAIN"},
+        "trainCategory": "IC",
+        "cancelled": true,
+        "messages": [{"text": "Trein rijdt niet", "type": "MISC"}],
+        "arrivalStatus": "INCOMING"
+      },
+      {
+        "origin": "Rotterdam Centraal",
+        "name": "NS 1750",
+        "plannedDateTime": "2026-10-26T14:40:00+01:00",
+        "actualDateTime": "2026-10-26T14:40:00+01:00",
+        "plannedTrack": "15",
+        "product": {"number": "1750", "categoryCode": "ICD", "operatorName": "NS", "type": "TRAIN"},
+        "cancelled": false,
+        "arrivalStatus": "ARRIVED"
+      },
+      {
+        "origin": "Onbekend",
+        "name": "Bus zonder nummer",
+        "plannedDateTime": "2026-10-26T14:50:00+0100",
+        "product": {"categoryCode": "BUS", "type": "BUS"},
+        "cancelled": false
+      }
+    ]
+  }
+}

@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Verificatiecode{% endblock %}
+{% block content %}
+<h1>Verificatiecode</h1>
+{% for p in prompts %}
+<form class="card" method="post" action="/otp/{{ p.id }}">
+  <p><strong>{{ p.who or "Account" }}</strong> vraagt om een verificatiecode.
+    {% if p.hint %}<span class="muted">{{ p.hint }}</span>{% endif %}</p>
+  <label for="code-{{ p.id }}">Code</label>
+  <input id="code-{{ p.id }}" name="code" inputmode="numeric" autocomplete="one-time-code" autofocus required>
+  <p><button class="primary" type="submit">Versturen</button></p>
+</form>
+{% else %}
+<p class="muted">Er is nu geen code nodig. <a href="/otp">Vernieuwen</a></p>
+{% endfor %}
+{% endblock %}

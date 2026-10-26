@@ -1,0 +1,20 @@
+services:
+  treinvertraging:
+    build: .
+    image: treinvertraging:latest
+    container_name: treinvertraging
+    restart: unless-stopped
+    init: true
+    shm_size: 1gb # Chromium needs a large /dev/shm
+    env_file: .env
+    environment:
+      TZ: Europe/Amsterdam
+    volumes:
+      - ./data:/data
+      - ./config:/config
+    ports:
+      # 8080 = web UI (HTTP Basic auth), 6080 = noVNC (live browser / human takeover).
+      # Do NOT expose these to the internet. Bind to your LAN address or Tailscale IP via
+      # BIND_ADDR in .env (e.g. BIND_ADDR=192.168.1.50 or your 100.x.y.z Tailscale address).
+      - "${BIND_ADDR:-0.0.0.0}:8080:8080"
+      - "${BIND_ADDR:-0.0.0.0}:6080:6080"

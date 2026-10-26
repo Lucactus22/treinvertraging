@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="nl"><head><meta charset="utf-8"><title>Fetch demo</title></head>
+<body>
+<h1>Fetch demo</h1>
+<button id="go" onclick="fetch('/api/trips').then(r => r.json()).then(d => document.getElementById('out').textContent = JSON.stringify(d))">Laad reizen</button>
+<button id="slow" onclick="slowPost()">Langzaam</button>
+<button id="chain" onclick="chain()">Keten</button>
+<button id="login" onclick="login()">Inloggen</button>
+<pre id="out"></pre>
+<div id="state">idle</div>
+<script>
+async function xas(payload) {
+  const r = await fetch('/xas/', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload)});
+  return r.json();
+}
+async function slowPost() {
+  document.getElementById('state').textContent = 'busy';
+  const d = await xas({action: 'slow'});
+  document.getElementById('state').textContent = 'done:' + d.n;
+}
+async function chain() {
+  // two POSTs with a gap in between: wait_idle must not return after the first one
+  document.getElementById('state').textContent = 'busy';
+  await xas({action: 'one'});
+  await new Promise(r => setTimeout(r, 150));
+  const d = await xas({action: 'two'});
+  document.getElementById('state').textContent = 'chain-done:' + d.n;
+}
+async function login() {
+  await fetch('/api/login', {method: 'POST', headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+    body: 'email=jan%40example.com&password=hunter2&iban=NL91ABNA0417164300'});
+}
+</script>
+</body></html>

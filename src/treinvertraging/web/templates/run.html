@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Uitvoeren{% endblock %}
+{% block content %}
+<h1>Nu uitvoeren</h1>
+<div class="card actions">
+  {% for key, (fn, label) in actions.items() %}
+  <button hx-post="/run/{{ key }}" hx-target="#flash" hx-swap="innerHTML" hx-disabled-elt="this">{{ label }}</button>
+  {% endfor %}
+</div>
+{% if running %}<p class="muted">Loopt nu: {{ running|join(", ") }}</p>{% endif %}
+<h2>Logboek (live)</h2>
+<pre class="log" id="log" aria-live="polite"></pre>
+<script>
+(function () {
+  var box = document.getElementById("log");
+  function add(line) {
+    var stick = box.scrollTop + box.clientHeight >= box.scrollHeight - 20;
+    box.appendChild(document.createTextNode(line + "\n"));
+    while (box.childNodes.length > 1000) box.removeChild(box.firstChild);
+    if (stick) box.scrollTop = box.scrollHeight;
+  }
+  var es = new EventSource("/run/logs/stream");
+  es.onmessage = function (e) { add(e.data); };
+  es.onerror = function () { /* the browser reconnects by itself */ };
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Accounts{% endblock %}
+{% block content %}
+<h1>Accounts</h1>
+<p><a class="btn primary" href="/accounts/new">Account toevoegen</a></p>
+<div class="table-wrap"><table>
+  <tr><th>Naam</th><th>Bron</th><th>Gebruiker</th><th>Kaart</th><th>IBAN</th><th>OTP</th><th>Actief</th><th>Acties</th></tr>
+  {% for v in accounts %}{% set a = v.acc %}
+  <tr>
+    <td>{{ a.label }}<div class="muted">{{ a.holder_name }}</div></td>
+    <td>{{ "Mijn NS" if a.source == "ns" else "OV-chipkaart" }}</td>
+    <td>{{ a.username }}{% if not v.has_password %}<div class="muted">geen wachtwoord</div>{% endif %}</td>
+    <td>{% if v.card_last4 %}&bull;&bull;&bull;&bull; {{ v.card_last4 }}{% else %}-{% endif %}</td>
+    <td>{% if v.iban_last4 %}&bull;&bull;&bull;&bull; {{ v.iban_last4 }}{% else %}-{% endif %}</td>
+    <td>{{ a.otp_provider }}</td>
+    <td>{{ "ja" if a.enabled else "nee" }}</td>
+    <td class="actions">
+      <a class="btn" href="/accounts/{{ a.id }}/edit">Wijzigen</a>
+      <form class="inline" method="post" action="/accounts/{{ a.id }}/test-login"><button type="submit">Test login</button></form>
+      <form class="inline" method="post" action="/accounts/{{ a.id }}/calibrate">
+        <select name="channel" style="width:auto" aria-label="Kanaal">
+          {% for key, label in channels.items() %}<option value="{{ key }}" {% if key == a.source %}selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+        <button type="submit">Kalibreren</button>
+      </form>
+    </td>
+  </tr>
+  {% else %}<tr><td colspan="8" class="muted">Nog geen accounts.</td></tr>{% endfor %}
+</table></div>
+
+<h2>IMAP (automatische verificatiecodes)</h2>
+<form class="card" method="post" action="/settings/imap">
+  <p class="muted">Alleen nodig als een account de OTP-methode "imap" gebruikt. Het wachtwoord wordt versleuteld opgeslagen.</p>
+  <label for="host">Server</label><input id="host" name="host" value="{{ imap.get('host', '') }}" placeholder="imap.example.com">
+  <label for="port">Poort</label><input id="port" name="port" value="{{ imap.get('port', '993') }}">
+  <label for="user">Gebruiker</label><input id="user" name="user" value="{{ imap.get('user', '') }}">
+  <label for="password">Wachtwoord / app-wachtwoord</label>
+  <input id="password" name="password" type="password" autocomplete="new-password" placeholder="{{ '(ongewijzigd laten)' if imap_has_password else '' }}">
+  <label for="folder">Map</label><input id="folder" name="folder" value="{{ imap.get('folder', 'INBOX') }}">
+  <label for="senders">Afzenders (komma-gescheiden)</label><input id="senders" name="senders" value="{{ imap.get('senders', '') }}" placeholder="ns.nl, ov-chipkaart.nl">
+  <label for="code_regex">Code-patroon (regex)</label><input id="code_regex" name="code_regex" value="{{ imap.get('code_regex', '') }}" placeholder="\b\d{6}\b">
+  <p><button class="primary" type="submit">Opslaan</button></p>
+</form>
+{% endblock %}

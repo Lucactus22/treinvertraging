@@ -1,0 +1,11 @@
+<!doctype html>
+<html lang="nl"><head><meta charset="utf-8"><title>Typing</title></head>
+<body>
+<label for="naam">Naam</label><input id="naam" type="text" value="oud">
+<button id="btn" onclick="document.getElementById('clicked').textContent='yes'">Klik</button>
+<div id="clicked">no</div>
+<script>
+window.keyTimes = [];
+document.getElementById('naam').addEventListener('keydown', e => window.keyTimes.push(performance.now()));
+</script>
+</body></html>
