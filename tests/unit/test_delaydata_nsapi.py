@@ -14,6 +14,7 @@ import pytest
 import respx
 from sqlalchemy import select
 
+from treinvertraging.config import reset_settings_cache
 from treinvertraging.db import get_engine, get_session_factory
 from treinvertraging.delaydata import archiver, nsapi
 from treinvertraging.models import Arrival, Base, Trip
@@ -143,6 +144,7 @@ def test_frequent_destinations_ranks_and_adds_extras(db, monkeypatch: pytest.Mon
         "GVC",
     ]  # tie -> alphabetical
     monkeypatch.setenv("ARCHIVE_EXTRA_STATIONS", "ut, asd")
+    reset_settings_cache()
     assert archiver.frequent_destinations(2, session_factory=db) == ["ASD", "RTD", "UT"]
     with db() as s:
         assert archiver.frequent_destinations(1, s) == ["ASD", "UT"]

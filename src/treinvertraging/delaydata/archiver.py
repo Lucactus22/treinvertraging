@@ -13,11 +13,9 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import os
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 
-import yaml
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -56,19 +54,8 @@ def _split_codes(raw: object) -> list[str]:
 
 
 def extra_stations() -> list[str]:
-    """Extra station codes from ``ARCHIVE_EXTRA_STATIONS`` (settings attr, env var or settings.yaml)."""
-    settings = get_settings()
-    value = getattr(settings, "ARCHIVE_EXTRA_STATIONS", None)
-    if value is None:
-        value = os.environ.get("ARCHIVE_EXTRA_STATIONS")
-    if value is None:
-        try:
-            data = yaml.safe_load((settings.CONFIG_DIR / "settings.yaml").read_text(encoding="utf-8"))
-        except (OSError, yaml.YAMLError):
-            data = None
-        if isinstance(data, dict):
-            value = next((v for k, v in data.items() if str(k).lower() == "archive_extra_stations"), None)
-    return _split_codes(value)
+    """Extra station codes from the ``ARCHIVE_EXTRA_STATIONS`` setting (env or settings.yaml)."""
+    return _split_codes(get_settings().ARCHIVE_EXTRA_STATIONS)
 
 
 def frequent_destinations(
