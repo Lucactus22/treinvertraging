@@ -64,7 +64,12 @@ async def test_fetch_arrivals_sends_key_and_station(payload: dict) -> None:
 @respx.mock
 @pytest.mark.parametrize(
     ("status", "exc"),
-    [(401, nsapi.NsApiAuthError), (403, nsapi.NsApiAuthError), (429, nsapi.NsApiRateLimited), (500, nsapi.NsApiError)],
+    [
+        (401, nsapi.NsApiAuthError),
+        (403, nsapi.NsApiAuthError),
+        (429, nsapi.NsApiRateLimited),
+        (500, nsapi.NsApiError),
+    ],
 )
 async def test_fetch_arrivals_errors(status: int, exc: type[Exception]) -> None:
     respx.get(URL).mock(return_value=httpx.Response(status, headers={"retry-after": "30"}))
@@ -117,8 +122,13 @@ def _add_trips(db, destinations: list[str | None]) -> None:
         for i, dest in enumerate(destinations):
             s.add(
                 Trip(
-                    key=f"k{i}", account_id=1, source="ns", card_id="c",
-                    checkin_at=datetime(2026, 10, 1, 8, i, tzinfo=UTC), from_station="UT", to_station=dest,
+                    key=f"k{i}",
+                    account_id=1,
+                    source="ns",
+                    card_id="c",
+                    checkin_at=datetime(2026, 10, 1, 8, i, tzinfo=UTC),
+                    from_station="UT",
+                    to_station=dest,
                 )
             )
         s.commit()
@@ -127,7 +137,11 @@ def _add_trips(db, destinations: list[str | None]) -> None:
 def test_frequent_destinations_ranks_and_adds_extras(db, monkeypatch: pytest.MonkeyPatch) -> None:
     _add_trips(db, ["ASD", "ASD", "ASD", "RTD", "RTD", "GVC", None, "ZL"])
     assert archiver.frequent_destinations(2, session_factory=db) == ["ASD", "RTD"]
-    assert archiver.frequent_destinations(3, session_factory=db) == ["ASD", "RTD", "GVC"]  # tie -> alphabetical
+    assert archiver.frequent_destinations(3, session_factory=db) == [
+        "ASD",
+        "RTD",
+        "GVC",
+    ]  # tie -> alphabetical
     monkeypatch.setenv("ARCHIVE_EXTRA_STATIONS", "ut, asd")
     assert archiver.frequent_destinations(2, session_factory=db) == ["ASD", "RTD", "UT"]
     with db() as s:
@@ -145,7 +159,9 @@ def test_extra_stations_from_settings_yaml(data_dir: Path, monkeypatch: pytest.M
 async def test_archive_once_polls_each_station_and_stores(db, payload: dict) -> None:
     route = respx.get(URL).mock(return_value=httpx.Response(200, json=payload))
     async with nsapi.NsApiClient("k") as client:
-        result = await archiver.archive_once(["asd", "UT", "ASD"], client=client, session_factory=db, pause_s=0)
+        result = await archiver.archive_once(
+            ["asd", "UT", "ASD"], client=client, session_factory=db, pause_s=0
+        )
     assert route.call_count == 2  # duplicates removed
     assert result.stored == {"ASD": 3, "UT": 3} and not result.errors and not result.aborted
     with db() as s:

@@ -14,7 +14,8 @@ Input: a ``TripDTO`` and a SQLAlchemy ``Session`` holding the ``arrivals`` table
    destination would already have passed. Instead the *effective* time (actual arrival; for
    cancelled trains the planned time) must satisfy ``checkin + 5min <= effective <= checkout + 5min``
    (a train cannot arrive before the minimum ride time, nor after the traveller checked out;
-   the 5 minutes absorb clock differences between OV-chip readers and the timetable).
+   the 5 minutes absorb clock differences between OV-chip readers and the timetable; a
+   cancelled train gets no slack, it must have been due before check-out).
 3. Ranking: the traveller checks out shortly after the train arrives, so the best candidate
    is the one whose effective time is closest before check-out (smallest ``gap = checkout -
    effective``, with a small negative gap tolerated). Candidates more than 30 minutes before
@@ -140,7 +141,9 @@ def match(trip: TripDTO, session: Session) -> MatchResult:
     scored: list[tuple[timedelta, bool, Arrival]] = []
     for a in rows:
         eff = _aware(_effective(a), tz)
-        if eff < checkin + MIN_RIDE or eff > checkout + CHECKOUT_SLACK:
+        # A cancelled train has no arrival: it only counts if it was due before check-out.
+        latest = checkout if a.cancelled else checkout + CHECKOUT_SLACK
+        if eff < checkin + MIN_RIDE or eff > latest:
             continue
         gap = max(checkout - eff, timedelta(0))
         if gap > MAX_GAP:
@@ -163,10 +166,14 @@ def match(trip: TripDTO, session: Session) -> MatchResult:
 
     evidence = [_describe(best, trip, tz)]
     if best_gap > LOW_CONFIDENCE_GAP:
-        evidence.append(f"low confidence: train arrived {int(best_gap.total_seconds() // 60)} min before check-out")
+        evidence.append(
+            f"low confidence: train arrived {int(best_gap.total_seconds() // 60)} min before check-out"
+        )
     others = [s for s in scored if s[2].id != best.id and s[0] - best_gap <= AMBIGUITY_WINDOW]
     if others:
-        evidence.append("ambiguous: also close to check-out: " + "; ".join(_describe(s[2], trip, tz) for s in others))
+        evidence.append(
+            "ambiguous: also close to check-out: " + "; ".join(_describe(s[2], trip, tz) for s in others)
+        )
 
     delay = None if best.cancelled else _delay(best)
     if best.cancelled:
@@ -175,7 +182,9 @@ def match(trip: TripDTO, session: Session) -> MatchResult:
         planned = _aware(best.planned_at, tz)
         implied = round((checkout - planned).total_seconds() / 60) - WALK_SLACK_MIN
         if delay is not None and abs(implied - delay) > CROSSCHECK_TOLERANCE_MIN:
-            evidence.append(f"cross-check mismatch: check-out implies about +{implied} min, data says {delay:+d}")
+            evidence.append(
+                f"cross-check mismatch: check-out implies about +{implied} min, data says {delay:+d}"
+            )
         elif delay is not None:
             evidence.append(f"check-out consistent (implies about {implied:+d} min)")
         # cancelled predecessor: a train that did not run shortly before the one taken

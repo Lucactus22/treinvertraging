@@ -75,7 +75,11 @@ class Settings(BaseSettings):
     # Comma separated in env (e.g. "gtbv,mijnns"); a YAML list also works.
     SUBMIT_CHANNELS: Annotated[list[str], NoDecode] = Field(default_factory=lambda: ["gtbv", "mijnns"])
 
-    @field_validator("SUBMIT_CHANNELS", mode="before")
+    # Station codes always polled by the NS API arrivals archiver, on top of the top-N destinations.
+    ARCHIVE_EXTRA_STATIONS: Annotated[list[str], NoDecode] = Field(default_factory=list)
+    ARCHIVE_TOP_N: int = 10
+
+    @field_validator("SUBMIT_CHANNELS", "ARCHIVE_EXTRA_STATIONS", mode="before")
     @classmethod
     def _split_channels(cls, v: Any) -> Any:
         if isinstance(v, str):

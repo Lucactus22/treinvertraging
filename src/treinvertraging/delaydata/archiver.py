@@ -23,7 +23,13 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from treinvertraging.config import get_settings
 from treinvertraging.db import get_session_factory
-from treinvertraging.delaydata.nsapi import NsApiAuthError, NsApiClient, NsApiError, NsApiRateLimited, upsert_arrivals
+from treinvertraging.delaydata.nsapi import (
+    NsApiAuthError,
+    NsApiClient,
+    NsApiError,
+    NsApiRateLimited,
+    upsert_arrivals,
+)
 from treinvertraging.models import Trip
 
 log = logging.getLogger(__name__)
@@ -107,9 +113,13 @@ async def archive_once(
     (logged); an auth failure or rate limit aborts the remaining stations; other per-station
     errors are recorded in ``errors`` and polling continues.
     """
-    codes = list(dict.fromkeys(_split_codes(list(stations)) if stations is not None else frequent_destinations(
-        session_factory=session_factory
-    )))
+    codes = list(
+        dict.fromkeys(
+            _split_codes(list(stations))
+            if stations is not None
+            else frequent_destinations(session_factory=session_factory)
+        )
+    )
     result = ArchiveResult()
     if not codes:
         return result
