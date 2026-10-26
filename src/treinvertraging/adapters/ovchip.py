@@ -964,6 +964,7 @@ class OvchipAdapter:
         page = s.page
         if await self._session_ok(s):
             return None
+        self._credentials()  # fail early (InvalidInput) instead of after navigating
         status = await self._goto(page, self._url(_sel("base.home_path", "/nl/mijn-ov-chip")))
         await self._dismiss_cookies(page)
         state, detail = await self._wait_state(s, status=status)
@@ -1062,6 +1063,20 @@ class OvchipAdapter:
                 continue
             raise BlockedByBotProtection(f"ov-chipkaart.nl blocked {path}: {reason}")
 
+    async def _check_page(self, s: BrowserSession) -> None:
+        """The current page (reached by a click) must not be a bot block; one takeover, one reload."""
+        page = s.page
+        reason = await self._blocked_reason(page, None, settle_s=self.block_check_after_s)
+        if reason is None:
+            return
+        await s.takeover(f"OV-chipkaart: {reason}", timeout=self.takeover_timeout_s)
+        reason = await self._blocked_reason(page, None, settle_s=self.block_check_after_s)
+        if reason is not None:
+            await self._goto(page, page.url)
+            reason = await self._blocked_reason(page, None, settle_s=self.block_check_after_s)
+        if reason is not None:
+            raise BlockedByBotProtection(f"ov-chipkaart.nl blocked {page.url}: {reason}")
+
     async def _settle(self, page: Page) -> None:
         try:
             await page.wait_for_load_state("networkidle", timeout=5000)
@@ -1140,6 +1155,7 @@ class OvchipAdapter:
                 await page.wait_for_load_state("domcontentloaded", timeout=10_000)
             except PlaywrightError:
                 pass
+            await self._check_page(s)
             return
         direct = _sel("base.history_path", "")
         if direct:
