@@ -44,7 +44,7 @@ if [ -z "${VNC_PASSWORD:-}" ]; then
         echo "[entrypoint] VNC_PASSWORD not set; reusing previously generated password (see $DATA_DIR/vnc.generated)"
         VNC_PASSWORD="$(cat "$DATA_DIR/vnc.generated")"
     else
-        VNC_PASSWORD="$(head -c 24 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | head -c 12)"
+        VNC_PASSWORD="$(head -c 24 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | head -c 8)"
         ( umask 077; printf '%s' "$VNC_PASSWORD" > "$DATA_DIR/vnc.generated" )
         echo "=================================================================="
         echo "[entrypoint] VNC_PASSWORD was not set. Generated one (shown once):"
@@ -53,9 +53,9 @@ if [ -z "${VNC_PASSWORD:-}" ]; then
         echo "=================================================================="
     fi
 fi
-# x11vnc only uses the first 8 characters of a VNC password.
+# The VNC protocol only uses the first 8 characters of a password.
 if [ "${#VNC_PASSWORD}" -gt 8 ]; then
-    echo "[entrypoint] note: VNC passwords are truncated to 8 characters by the VNC protocol"
+    echo "[entrypoint] note: VNC passwords are truncated to 8 characters by the VNC protocol; only the first 8 count"
 fi
 rm -f "$PASSFILE"
 x11vnc -storepasswd "$VNC_PASSWORD" "$PASSFILE" >/dev/null 2>&1
