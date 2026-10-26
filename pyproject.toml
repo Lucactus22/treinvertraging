@@ -1,0 +1,58 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "treinvertraging"
+version = "0.1.0"
+description = "Self-hosted bot that claims NS 'geld terug bij vertraging' automatically."
+requires-python = ">=3.12"
+dependencies = [
+    "playwright==1.63.0",
+    "fastapi",
+    "uvicorn[standard]",
+    "jinja2",
+    "python-multipart",
+    "sqlalchemy>=2",
+    "alembic",
+    "apscheduler>=3.10,<4",
+    "pydantic>=2",
+    "pydantic-settings",
+    "pyyaml",
+    "cryptography",
+    "apprise",
+    "httpx",
+    "typer",
+    "rapidfuzz",
+    "sse-starlette",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+    "ruff",
+    "aiohttp",
+    "respx",
+]
+
+[project.scripts]
+treinvertraging = "treinvertraging.__main__:app"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+treinvertraging = ["web/templates/*", "web/static/*"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+extend-exclude = ["alembic/versions"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

@@ -1,0 +1,35 @@
+# Treinvertraging settings. Copy to /config/settings.yaml (mounted volume).
+# Every key can also be set as an environment variable of the same name (env wins over this file).
+# Secrets (WEB_PASSWORD, NS_API_KEY, APPRISE_URLS) are better kept in .env.
+
+# Where app.db, profiles/, debug/, rdt-cache/ and secret.key live.
+DATA_DIR: /data
+# Where settings.yaml, rules.yaml and selectors.yaml live.
+CONFIG_DIR: /config
+
+# dry_run: never submit, only mark/log. approve: every claim needs a click in the UI.
+# auto: submit automatically.
+CLAIM_MODE: approve
+# In approve mode, switch to auto behaviour after this many successfully approved claims (0 = never).
+AUTO_AFTER_N_APPROVED: 5
+
+TIMEZONE: Europe/Amsterdam
+
+# Free subscription key from https://apiportal.ns.nl (reisinformatie-api). Optional.
+NS_API_KEY: ""
+# Apprise notification URLs, comma separated (tgram://..., ntfys://..., mailto://...).
+APPRISE_URLS: ""
+
+# HTTP Basic auth for the web UI on :8080.
+WEB_USERNAME: admin
+WEB_PASSWORD: ""
+# Base URL used in notification links (approve links, noVNC takeover link on :6080).
+PUBLIC_URL: http://localhost:8080
+
+# Headed Chromium (inside Xvfb) looks less like a bot than headless. Keep false in production.
+HEADLESS: false
+# Daily pipeline runs at a random minute inside this window (local time).
+RUN_WINDOW: "07:00-22:00"
+
+# Submission channels, tried in order. gtbv = public form, mijnns = prefilled form in Mijn NS.
+SUBMIT_CHANNELS: [gtbv, mijnns]
