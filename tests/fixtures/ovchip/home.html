@@ -1,0 +1,18 @@
+<!doctype html>
+<!-- SYNTHETIC: Mijn OV-chip with a card picker and a Cookiebot banner -->
+<html lang="nl"><head><meta charset="utf-8"><title>Mijn OV-chip</title></head>
+<body>
+<div id="CybotCookiebotDialog" style="position:fixed;bottom:0;left:0;right:0;background:#eee;padding:8px">
+  Wij gebruiken cookies.
+  <button id="CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll"
+          onclick="fetch('/api/consent'); document.getElementById('CybotCookiebotDialog').remove()">Alles toestaan</button>
+</div>
+<h1>Mijn OV-chip</h1>
+<p>Welkom terug, Jan.</p>
+<label for="cardpicker">Kies je kaart</label>
+<select id="cardpicker" onchange="fetch('/api/select-card?card=' + this.value)">
+  <option value="9999">3528 **** **** 9999 (Piet)</option>
+  <option value="1111">3528 **** **** 1111 (Jan)</option>
+</select>
+<nav><a href="/nl/mijn-ov-chip/reishistorie">Reishistorie</a> | <a href="/nl/mijn-ov-chip/saldo">Saldo</a></nav>
+</body></html>

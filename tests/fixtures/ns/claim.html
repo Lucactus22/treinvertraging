@@ -1,0 +1,40 @@
+<!doctype html>
+<!-- SYNTHETIC: fake prefilled "Geld terug bij vertraging" wizard (2 steps). ref=P* prefills IBAN and holder. -->
+<html lang="nl"><head><meta charset="utf-8"><title>Geld terug bij vertraging - Mijn NS</title></head>
+<body>
+<h1>Geld terug bij vertraging</h1>
+<div id="step1">
+  <label for="iban">IBAN</label><input id="iban" name="iban">
+  <label for="holder">Naam rekeninghouder</label><input id="holder" name="holder">
+  <button id="next" type="button">Volgende</button>
+</div>
+<div id="step2" hidden>
+  <label><input type="checkbox" id="c1"> Ik verklaar dat de gegevens juist zijn</label>
+  <label><input type="checkbox" id="c2"> Ik ga akkoord met de voorwaarden</label>
+  <button id="send" type="button">Versturen</button>
+</div>
+<div id="error" role="alert" hidden></div>
+<div id="done" hidden></div>
+<script>
+const q = s => document.querySelector(s);
+const ref = new URLSearchParams(location.search).get('ref') || '';
+if (ref.startsWith('P')) { q('#iban').value = 'NL91ABNA0417164300'; q('#holder').value = 'Prefilled Houder'; }
+function fail(msg) { q('#error').textContent = msg; q('#error').hidden = false; }
+q('#next').onclick = () => {
+  q('#error').hidden = true;
+  if (!q('#iban').value.trim()) return fail('Vul een IBAN in.');
+  q('#step1').hidden = true; q('#step2').hidden = false;
+};
+q('#send').onclick = async () => {
+  q('#error').hidden = true;
+  if (!q('#c1').checked || !q('#c2').checked) return fail('Bevestig alle verklaringen.');
+  const r = await fetch('/api/claim-submit', {method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ref, iban: q('#iban').value, holder: q('#holder').value})});
+  const d = await r.json();
+  if (!d.ok) return fail(d.error);
+  q('#step2').hidden = true;
+  q('#done').textContent = 'Bedankt! We hebben je aanvraag ontvangen. Referentienummer: ' + d.reference;
+  q('#done').hidden = false;
+};
+</script>
+</body></html>

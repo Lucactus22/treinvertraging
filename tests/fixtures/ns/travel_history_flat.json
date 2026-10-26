@@ -1,0 +1,24 @@
+[
+  {
+    "_comment": "SYNTHETIC: flat Dutch-keyed rows (time-only fields + separate date, euro strings).",
+    "datum": "13-10-2026",
+    "checkInTijd": "17:05",
+    "checkUitTijd": "17:52",
+    "vertrekStation": "Amsterdam Centraal",
+    "bestemming": "Utrecht Centraal",
+    "bedrag": "€ 9,40",
+    "vervoerder": "NS",
+    "vertraging": "35 min",
+    "geldTerugId": "GT-7781"
+  },
+  {
+    "datum": "2026-10-14",
+    "checkInTijd": "23:50",
+    "checkUitTijd": "00:30",
+    "vertrekStation": "Utrecht Centraal",
+    "bestemming": "Eindhoven Centraal",
+    "bedrag": "12,10",
+    "vervoerder": "NS",
+    "vertraging": "geen"
+  }
+]

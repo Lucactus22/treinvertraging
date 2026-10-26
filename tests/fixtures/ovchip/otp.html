@@ -1,0 +1,13 @@
+<!doctype html>
+<!-- SYNTHETIC: second factor step -->
+<html lang="nl"><head><meta charset="utf-8"><title>Verificatie</title></head>
+<body>
+<h1>Verificatie</h1>
+<p>We hebben een code gestuurd naar je e-mailadres.</p>
+<div id="error-msg" class="alert alert-danger" style="display:{error_display}">{error}</div>
+<form method="post" action="/authenticationendpoint/otp">
+  <label for="otpCode">Verificatiecode</label>
+  <input type="text" id="otpCode" name="otp" autocomplete="one-time-code">
+  <button type="submit">Verifiëren</button>
+</form>
+</body></html>

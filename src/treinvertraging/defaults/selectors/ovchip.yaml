@@ -1,0 +1,152 @@
+# OV-chipkaart (www.ov-chipkaart.nl, Next.js + NextAuth -> login.ov-chipkaart.nl, WSO2 Identity Server).
+#
+# BEST-GUESS defaults written without access to a logged-in account. Everything here is meant to be
+# corrected during calibration (M6) by dropping a partial override in CONFIG_DIR/selectors/ovchip.yaml.
+#
+# Conventions
+#   * Every string in a ``*_names`` / ``*_labels`` / ``*_regex`` / ``*_regexes`` list is a regular
+#     expression matched case-insensitively (``re.I``); ``names`` are matched against the accessible
+#     name of a button/link, ``labels`` against <label>/aria-label text.
+#   * ``id_hints`` / ``*_css`` entries are plain CSS selectors and are only a fallback behind the
+#     label/role based locators.
+#   * Keys marked CALIBRATE are the ones most likely to need a real value.
+
+base:
+  session_path: /api/auth/session      # NextAuth: JSON with a "user" key when logged in
+  home_path: /nl/mijn-ov-chip          # entry point; logged-out visitors are sent on to the WSO2 login
+  history_path: ''                     # CALIBRATE: direct URL of the travel history (used when no link is found)
+
+cookies:
+  # Cookiebot (ov-chipkaart.nl). Role based fallbacks ("Alles toestaan", "Accepteren") are built in.
+  selectors:
+    - '#CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll'
+    - '#CybotCookiebotDialogBodyButtonAccept'
+
+block:
+  # From a datacenter IP headless Chromium got a 583-byte empty shell. A page that is this small AND
+  # has no visible text is treated as BlockedByBotProtection.
+  min_html_bytes: 1500
+  text_regex: 'access denied|request blocked|pardon our interruption|unusual traffic|verify you are (a )?human|toegang geweigerd|je bent geblokkeerd|incident id'
+  html_regex: '_Incapsula_Resource|Incapsula incident|captcha-delivery|px-captcha|cf-chl'
+
+login:
+  entry_button_names:                  # NextAuth sign-in page / header button that leads to WSO2
+    - '^(inloggen|log in|login|aanmelden)$'
+    - 'inloggen met'
+  username:
+    labels: ['gebruikersnaam', 'e-?mail(adres)?', 'username', 'inlognaam']
+    placeholders: ['gebruikersnaam', 'e-?mail']
+    id_hints: ['#usernameUserInput', '#username']
+  password:
+    labels: ['^\s*wachtwoord\s*\*?\s*$', '^\s*password\s*\*?\s*$']
+    placeholders: ['wachtwoord']
+    id_hints: ['#password']
+  next_names: ['^(volgende|doorgaan|verder|next|continue)$']   # identifier-first flows
+  remember_labels: ['onthoud', 'ingelogd blijven', 'remember']
+  submit_names: ['^(inloggen|log in|login|aanmelden|verzenden)$']
+  submit_css: ['button[type=submit]', 'input[type=submit]']
+  error_regex: 'ongeldig|onjuist|incorrect|invalid|mislukt|geblokkeerd|vergrendeld|niet herkend|foutieve|wrong'
+  error_css: ['#error-msg', '.alert-danger', '[role=alert]']
+  otp:
+    labels: ['verificatiecode', 'beveiligingscode', 'eenmalige( inlog)?code', 'sms-?code', '^\s*code\s*\*?\s*$']
+    placeholders: ['code']
+    id_hints: ['#otpCode', '#OTPCode', '#otp', '#smsOtp', '#code', 'input[autocomplete=one-time-code]']
+    submit_names: ['^(verifi[eë]ren|bevestigen|inloggen|doorgaan|verzenden|volgende)$']
+    remember_labels: ['onthoud', 'vertrouw']
+
+card:
+  # Card picker on /mijn-ov-chip. The adapter matches the last 4 digits of the account's card number.
+  select_labels: ['kies.*kaart', 'selecteer.*kaart', '^\s*kaart', 'ov-?chipkaart']   # <select> style picker
+  item_roles: [radio, option, tab, link, button]                                      # list style picker
+
+history:
+  link_names: ['^reishistorie$', 'reis ?historie', 'reisoverzicht', 'mijn reizen']     # CALIBRATE
+  period:
+    date_format: '%d-%m-%Y'            # for type=text inputs; <input type=date> always gets ISO
+    from_labels: ['^\s*van(af)?\b', 'begindatum', 'startdatum', 'from']
+    to_labels: ['^\s*(t/m|tot( en met)?)\b', 'einddatum', 'to']
+    select_labels: ['periode', 'tijdvak']
+    # first option text matching one of these wins (ordered by preference: widest useful window first)
+    option_regexes: ['laatste 6 maanden|6 maanden', 'laatste 3 maanden|3 maanden|drie maanden', 'jaar']
+    apply_names: ['^(toon|tonen|zoeken|toepassen|weergeven|filter(en)?|ververs)']
+  export:
+    open_names: ['^(download|downloaden|exporteer|exporteren)', 'declaratie']          # click first when CSV control hidden
+    csv_names: ['csv', 'excel']
+  api:                                 # CALIBRATE: rung 0 (API replay) is skipped while url is empty
+    url: ''                            # may contain {from} / {to} (ISO dates) and {card} (last 4 digits)
+    regex: 'transaction|reishistor|travel-?history|journey|trips?\b|history'    # recorder JSON rung
+  dom:
+    table: 'table'                     # DOM fallback: first matching table with a recognisable header
+
+csv:
+  # Canonical field -> accepted header names. Headers are compared after lower-casing and removing
+  # everything except letters/digits ("Check-in" -> "checkin").
+  columns:
+    date: [datum, date, transactiedatum]
+    checkin_time: [checkin, incheck, checkintijd, checkintime, tijdincheck]
+    from: [vertrek, van, vertrekstation, instap, from, checkinlocatie, checkinstation]
+    checkout_time: [checkuit, uitcheck, checkouttijd, checkout, tijduitcheck]
+    to: [bestemming, naar, aankomst, bestemmingstation, to, checkuitlocatie, checkuitstation]
+    amount: [bedrag, amount, prijs, tarief]
+    transaction: [transactie, transaction, transactietype, omschrijving, type]
+    class: [klasse, class]
+    product: [product, producttype]
+    remarks: [opmerkingen, opmerking, remarks, notes]
+    name: [naam]
+    card: [kaartnummer, kaart, ovchipkaartnummer, cardnumber, pasnummer]
+    operator: [vervoerder, operator, vervoersbedrijf, maatschappij]
+  transaction:
+    checkin_regex: 'check-?in|incheck|instap|vergeten'
+    checkout_regex: 'check-?uit|uitcheck|uitstap'
+    topup_regex: 'saldo|opgeladen|opladen|oplaad|waarborg|automatisch|verkocht|aankoop|korting|abonnement'
+  max_trip_hours: 14                   # a check-in older than this before a check-out is "missing check-out"
+  # operator name -> regex searched in transaction/product/remarks/operator columns
+  operators:
+    NS: '(^|[^a-z])NS([^a-z]|$)|Nederlandse Spoorwegen|NS International|NS Flex'
+    Arriva: 'arriva'
+    GVB: '\bGVB\b'
+    RET: '\bRET\b'
+    HTM: '\bHTM\b'
+    Qbuzz: 'qbuzz'
+    Keolis: 'keolis'
+    EBS: '\bEBS\b'
+    Syntus: 'syntus'
+    Connexxion: 'connexxion'
+    Transdev: 'transdev'
+    Blauwnet: 'blauwnet'
+    Breng: '\bbreng\b'
+    Eurobahn: 'eurobahn'
+    Valleilijn: 'valleilijn'
+    Veolia: 'veolia'
+    U-OV: '\bu-?ov\b'
+    Deutsche Bahn: 'deutsche bahn|\bDB\b'
+
+json:
+  # Tolerant mapping for JSON responses (recorder / API replay). Keys of nested objects are flattened
+  # (``checkIn.station.name`` -> "checkinstationname"); a field matches when the normalised key equals
+  # or ends with one of the names below.
+  columns:
+    date: [date, datum, transactiondate, transactiedatum, day]
+    checkin_time: [checkintime, checkindatetime, checkinat, checkintijd, checkin, starttime, departuretime]
+    from: [checkinlocationname, checkinstationname, checkinlocation, checkinstation, vertrek, origin, from]
+    checkout_time: [checkouttime, checkoutdatetime, checkoutat, checkouttijd, checkout, endtime, arrivaltime]
+    to: [checkoutlocationname, checkoutstationname, checkoutlocation, checkoutstation, bestemming, destination, to]
+    amount: [amount, bedrag, fare, price, total]
+    transaction: [transactiontype, transactie, transaction, type, description]
+    class: [klasse, class, travelclass]
+    product: [product, producttype, productname]
+    remarks: [opmerkingen, opmerking, remarks, notes]
+    name: [naam, name]
+    card: [kaartnummer, cardnumber, cardid, pasnummer]
+    operator: [vervoerder, operator, operatorname, vervoersbedrijf, agency]
+
+timing:                                # seconds / milliseconds, all adjustable without a rebuild
+  type_delay_ms: [45, 140]
+  pause_s: [0.4, 1.2]
+  settle_timeout_s: 25
+  block_check_after_s: 3
+  nav_timeout_ms: 30000
+  download_timeout_ms: 45000
+  otp_timeout_s: 180
+  takeover_timeout_s: 1800
+  cookie_timeout_ms: 3000

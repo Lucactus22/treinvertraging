@@ -1,0 +1,9 @@
+# SYNTHETIC - handwritten sample in the assumed layout of the OV-chipkaart "reisoverzicht" CSV export. Not real data.
+Datum;Check-in;Vertrek;Check-uit;Bestemming;Bedrag;Transactie;Klasse;Product;Opmerkingen;Naam;Kaartnummer
+05-10-2026;08:15;Utrecht Centraal;09:02;Amsterdam Centraal;€ 9,60;Reis;2e;NS Dal Voordeel;;J. Jansen;3528 **** **** 1234
+06-10-2026;23:40;Amsterdam Centraal;00:35;Utrecht Centraal;12,10;Reis;2e;NS Vol tarief;;J. Jansen;3528 **** **** 1234
+06-10-2026;;;;;50,00;Saldo opgeladen;;Automatisch opladen;;J. Jansen;3528 **** **** 1234
+07-10-2026;17:30;Utrecht Centraal;;;;Incheck vergeten;;NS;Uitchecken vergeten;J. Jansen;3528 **** **** 1234
+08-10-2026;07:50;Utrecht Centraal;08:20;Amersfoort Centraal;€ 1.234,56;Reis;2e;NS Dal Voordeel;;J. Jansen;3528 **** **** 1234
+09-10-2026;12:00;Rotterdam Centraal;12:40;Den Haag Centraal;5,00;Reis;2e;NS Dal Voordeel;;P. Pietersen;3528 **** **** 5678
+09-10-2026;18:05;Utrecht Vaartsche Rijn;18:30;Utrecht, Jaarbeursplein;2,10;Reis;2e;Arriva;;J. Jansen;3528 **** **** 1234

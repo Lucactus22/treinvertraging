@@ -1,0 +1,8 @@
+<!doctype html>
+<!-- SYNTHETIC: "Mijn aanvragen" overview that loads JSON through fetch(). -->
+<html lang="nl"><head><meta charset="utf-8"><title>Mijn aanvragen - Mijn NS</title></head>
+<body>
+<h1>Mijn aanvragen</h1>
+<div id="status">laden...</div>
+<script>fetch('/api/aanvragen').then(r => r.json()).then(() => { document.getElementById('status').textContent = 'geladen'; });</script>
+</body></html>

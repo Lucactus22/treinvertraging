@@ -1,0 +1,51 @@
+<!doctype html>
+<!-- SYNTHETIC: fake login.ns.nl/login with the real field ids (email, password, remember, csrfToken). -->
+<html lang="nl"><head><meta charset="utf-8"><title>Inloggen - NS</title>
+<style>#onetrust-banner-sdk{position:fixed;bottom:0;left:0;right:0;background:#eee;padding:8px}</style></head>
+<body>
+<div id="onetrust-banner-sdk"><button id="onetrust-accept-btn-handler" onclick="this.parentNode.remove(); document.body.dataset.cookies='accepted'">Alle cookies accepteren</button></div>
+<form id="loginform" action="/vtnf/synthetic" method="post">
+  <h1>Inloggen</h1>
+  <label for="email">E-mailadres</label>
+  <input id="email" name="email" type="email" autocomplete="username">
+  <label for="password">Wachtwoord</label>
+  <input id="password" name="password" type="password" autocomplete="current-password">
+  <input type="checkbox" id="remember" name="remember"><label for="remember">Ingelogd blijven</label>
+  <input type="hidden" name="csrfToken" value="synthetic-csrf-token">
+  <input type="submit" value="Inloggen">
+</form>
+<div id="error" role="alert" hidden>E-mailadres of wachtwoord onjuist</div>
+<form id="otpform" hidden>
+  <h1>Bevestig je identiteit</h1>
+  <label for="code">Verificatiecode</label>
+  <input id="code" name="code" inputmode="numeric" autocomplete="one-time-code">
+  <button type="submit">Bevestigen</button>
+</form>
+<div id="otperror" role="alert" hidden>De code is onjuist of verlopen</div>
+<script>
+const q = s => document.querySelector(s);
+function finish() {
+  document.cookie = 'nssession=ok; path=/; max-age=3600';
+  location.replace('/mijnns');
+}
+async function post(path, body) {
+  const r = await fetch(path, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)});
+  return r.json();
+}
+q('#loginform').addEventListener('submit', async ev => {
+  ev.preventDefault();
+  const d = await post('/api/login-step', {
+    email: q('#email').value, password: q('#password').value,
+    remember: q('#remember').checked, csrfToken: q('[name=csrfToken]').value,
+  });
+  if (d.status === 'ok') finish();
+  else if (d.status === 'otp') { q('#loginform').hidden = true; q('#otpform').hidden = false; q('#code').focus(); }
+  else q('#error').hidden = false;
+});
+q('#otpform').addEventListener('submit', async ev => {
+  ev.preventDefault();
+  const d = await post('/api/verify', {code: q('#code').value});
+  if (d.status === 'ok') finish(); else q('#otperror').hidden = false;
+});
+</script>
+</body></html>

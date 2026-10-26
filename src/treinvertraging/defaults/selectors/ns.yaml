@@ -1,0 +1,168 @@
+# Mijn NS adapter (treinvertraging/adapters/ns.py).
+#
+# Everything here is a best-guess default built from recon on 2026-10-26 (login) plus guesses for
+# the pages behind the login. Entries marked CALIBRATE must be confirmed or filled in during
+# milestone M6 (see docs/CALIBRATION.md). Override any key in CONFIG_DIR/selectors/ns.yaml; the
+# user file is deep-merged over this one (lists are replaced, not merged).
+#
+# Element specs are mappings tried in order css -> label -> role(+name) -> text; the first match
+# that is visible wins. All label/name/text values are case-insensitive regular expressions.
+
+timeouts:
+  nav_s: 30            # page.goto
+  action_s: 20         # default for clicks / fills / waits
+  api_s: 30            # context.request.get (API replay)
+
+typing:
+  min_delay_ms: 45     # human_type per-key delay range
+  max_delay_ms: 140
+
+cookie:
+  # OneTrust on www.ns.nl and login.ns.nl (a stable vendor id, not an NS page selector).
+  selectors: ["#onetrust-accept-btn-handler"]
+  timeout_ms: 3000
+
+login:
+  start_path: /mijnns                      # opened relative to base_url
+  # Matched (re.search) against scheme://host/path WITHOUT the query string.
+  login_url_regex: 'login\.ns\.nl|loginapi\.ns\.nl|/login'
+  logged_in_url_regex: '/mijnns'
+  logged_in_text: ""                       # CALIBRATE (optional): regex of text only visible when logged in
+  logged_in_api_regex: ""                  # CALIBRATE (optional): JSON profile endpoint; a 401/403 hit there = logged out
+  settle_s: 15                             # how long a page may take to show a recognisable state
+  post_submit_s: 30                        # how long to wait for the result of the login submit
+  max_attempts: 2                          # login attempts before human takeover
+  takeover_timeout_s: 1800
+  email:
+    css: "#email"
+    label: 'e-?mail'
+  password:
+    css: "#password"
+    label: 'wachtwoord'
+  remember:
+    css: "#remember"
+    label: 'ingelogd blijven|onthoud|remember'
+  submit:
+    css: 'input[type="submit"], button[type="submit"]'
+    role: button
+    name: 'inloggen|log in'
+  error_text_regex: 'onjuist|ongeldig|klopt niet|niet herkend|incorrect|invalid'
+  otp:
+    # The verification-code screen: any input labelled like this (and no email/password field).
+    input:
+      label: 'verificatie|code'
+    submit:
+      role: button
+      name: 'bevestig|verstuur|verder|volgende|inloggen|controleer'
+    timeout_s: 180
+    error_text_regex: 'onjuist|ongeldig|verlopen|klopt niet|incorrect|invalid|expired'
+  blocked:
+    status_codes: [403, 429]
+    text_regex: 'access denied|toegang geweigerd|pardon our interruption|request unsuccessful|verify you are (a )?human|verifying you are human|unusual traffic|bot detected|reference #\d+\.[0-9a-f]+'
+    selectors:                              # any visible match = challenge page
+      - 'iframe[src*="captcha"]'
+      - 'iframe[title*="challenge" i]'
+      - '#challenge-form'
+      - '#sec-container'
+
+api:
+  # CALIBRATE: URL (absolute, or relative to base_url) of the JSON endpoint behind "Reishistorie".
+  # Placeholders: {since} (YYYY-MM-DD), {today}, {since_ms}. Empty = skip API replay.
+  travel_history: ""
+  # CALIBRATE: same for the "Mijn aanvragen" overview.
+  claims: ""
+  # Recorder entries whose URL matches ignore_url_regex are never parsed; json_url_regex (when set)
+  # restricts parsing to matching URLs.
+  json_url_regex: ""
+  ignore_url_regex: 'onetrust|cookielaw|analytics|googletagmanager|doubleclick|datadog|sentry|/session'
+
+mapping:
+  fare_unit: auto        # auto | cents | euros. CALIBRATE: pin once the real JSON is known.
+  card_from_data: true   # use a masked card number found in the JSON as TripDTO.card_id
+  default_operator: ""   # set a value to use when the record carries no operator
+
+nav:
+  # CALIBRATE: direct paths (tried before the link names), e.g. ["/mijnns/reishistorie"].
+  travel_history_urls: []
+  travel_history_links: ["Reishistorie", "Mijn reizen", "Reisoverzicht"]
+  claims_urls: []
+  claims_links: ["Mijn aanvragen", "Aanvragen", "Geld terug aanvragen"]
+  menu_button:                              # optional: opens a collapsed menu before looking for links
+    role: button
+    name: 'menu|mijn ns'
+  load_more:
+    role: button
+    name: 'meer (laden|tonen|reizen)|toon meer|laad meer'
+  max_load_more: 5
+  quiet_ms: 800                             # network quiet period after each navigation
+  idle_timeout_s: 15
+  empty_text_regex: 'geen reizen|nog geen reizen|geen aanvragen|nog geen aanvragen'
+
+# DOM fallback for the travel history (strategy 3). Disabled while `item` is empty.
+# CALIBRATE: CSS (or role-based CSS) relative to one list item. A field is "css" or "css@attr".
+dom:
+  item: ""
+  fields:
+    date: ""
+    checkin: ""
+    checkin_time: ""
+    checkout: ""
+    checkout_time: ""
+    from: ""
+    to: ""
+    fare: ""
+    product: ""
+    operator: ""
+    delay: ""            # presence of this element marks the trip as delayed (ns_delay_flag)
+    claim_link: ""       # e.g. "a.claim@href" -> ns_claim_ref
+
+# DOM fallback for "Mijn aanvragen". Fields: date, from, to, status, reference, amount.
+claims_dom:
+  item: ""
+  fields:
+    date: ""
+    from: ""
+    to: ""
+    status: ""
+    reference: ""
+    amount: ""
+
+claim:
+  # How the prefilled "Geld terug bij vertraging" form is opened.
+  # 1. TripDTO.ns_claim_ref that is a URL/path (starts with http or /)        -> goto
+  # 2. ns_claim_ref as an id, with url_template containing {ref}              -> goto template
+  # 3. no ref: open the trip in the travel history and click trip_button      -> needs dom.item
+  url_template: ""                          # CALIBRATE, e.g. "/mijnns/geld-terug/{ref}"
+  allowed_host_suffixes: ["ns.nl"]          # claim URLs must stay on base_url's host or these
+  trip_button:
+    role: button
+    name: 'geld terug|claim|vertraging'
+  trip_link:
+    role: link
+    name: 'geld terug|claim|vertraging'
+  expect_heading: 'geld terug|vertraging'   # role=heading text; empty disables the check
+  heading_timeout_s: 15
+  iban:
+    label: 'iban|rekeningnummer'
+  holder:
+    label: 'naam|t\.?n\.?v|rekeninghouder|tenaamstelling'
+  email:
+    label: 'e-?mail'
+  # Confirmation checkboxes to tick, by label. A plain string is REQUIRED (LayoutChanged when it is
+  # never found); {label: ..., optional: true} is ticked when present. CALIBRATE: make them required.
+  checkboxes:
+    - {label: 'verklaar|juist|correct', optional: true}
+    - {label: 'akkoord|voorwaarden', optional: true}
+  next:
+    role: button
+    name: 'volgende|verder|naar'
+  submit:
+    role: button
+    name: 'versturen|verstuur|indienen|aanvragen|claim (versturen|indienen)'
+  max_steps: 6
+  step_timeout_s: 8                         # how long to look for fields/buttons on one step
+  error_selector: '[role="alert"], .error-message, .field-error, .mx-validation-message'
+  error_regex: 'ongeldig|onjuist|klopt niet|niet geldig|is verplicht|vul .* in|incorrect|invalid'
+  success_regex: 'bedankt|ontvangen|aanvraag is verstuurd|we hebben je aanvraag'
+  reference_regex: '(?:referentie(?:nummer)?|aanvraagnummer|kenmerk)\W{0,6}([A-Z0-9][A-Z0-9-]{5,})'
+  success_timeout_s: 30

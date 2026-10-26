@@ -1,0 +1,16 @@
+<!doctype html>
+<!-- SYNTHETIC: Reishistorie with period inputs and a CSV download link -->
+<html lang="nl"><head><meta charset="utf-8"><title>Reishistorie</title></head>
+<body>
+<h1>Reishistorie</h1>
+<label for="vanaf">Van</label><input type="date" id="vanaf">
+<label for="tot">Tot</label><input type="date" id="tot">
+<button type="button" onclick="apply()">Toon</button>
+<p><a id="dl" href="/download/reishistorie.csv" download="reishistorie.csv">Download CSV</a></p>
+<script>
+function apply() {
+  document.getElementById('dl').href = '/download/reishistorie.csv?from=' +
+    document.getElementById('vanaf').value + '&to=' + document.getElementById('tot').value;
+}
+</script>
+</body></html>

@@ -1,0 +1,13 @@
+<!doctype html>
+<!-- SYNTHETIC: travel history that loads its data through fetch() (captured by the recorder). -->
+<html lang="nl"><head><meta charset="utf-8"><title>Reishistorie - Mijn NS</title></head>
+<body>
+<h1>Reishistorie</h1>
+<div id="status">laden...</div>
+<button id="more" hidden>Meer reizen laden</button>
+<script>
+fetch('/api/reishistorie?page=1').then(r => r.json()).then(d => {
+  document.getElementById('status').textContent = 'geladen';
+});
+</script>
+</body></html>

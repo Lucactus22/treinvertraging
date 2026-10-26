@@ -1,0 +1,11 @@
+Datum;Check-in;Vertrek;Check-uit;Bestemming;Bedrag;Transactie;Klasse;Product;Opmerkingen;Naam;Kaartnummer
+08-10-2026;;;08:00;Utrecht Centraal;7,25;Check-uit;2e;NS Dal Voordeel;;J. Jansen;3528 **** **** 1234
+08-10-2026;;;07:00;Rotterdam Centraal;;Check-uit;2e;;;J. Jansen;3528 **** **** 9999
+07-10-2026;;;00:30;Utrecht Centraal;11,90;Check-uit;2e;NS Vol tarief;;J. Jansen;3528 **** **** 1234
+06-10-2026;23:50;Amsterdam Centraal;;;;Check-in;2e;NS Vol tarief;;J. Jansen;3528 **** **** 1234
+06-10-2026;20:00;Utrecht Centraal;;;;Check-in;2e;NS Dal Voordeel;;J. Jansen;3528 **** **** 1234
+06-10-2026;;;;;25,00;Saldo opgeladen;;;;J. Jansen;3528 **** **** 1234
+05-10-2026;;;10:55;Scheveningen, Haringkade;1,40;Check-uit;2e;HTM;;J. Jansen;3528 **** **** 1234
+05-10-2026;10:40;Den Haag Centraal;;;;Check-in;2e;HTM;Overstap;J. Jansen;3528 **** **** 1234
+05-10-2026;;;10:40;Den Haag Centraal;8,15;Check-uit;2e;NS Dal Voordeel;;J. Jansen;3528 **** **** 1234
+05-10-2026;10:00;Rotterdam Centraal;;;;Check-in;2e;NS Dal Voordeel;;J. Jansen;3528 **** **** 1234

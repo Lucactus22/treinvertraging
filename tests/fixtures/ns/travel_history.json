@@ -1,0 +1,37 @@
+{
+  "_comment": "SYNTHETIC: plausible guess of a Mijn NS travel-history response (nested check-in/out objects, fare in cents).",
+  "travelHistory": {
+    "transactions": [
+      {
+        "id": "t1",
+        "cardNumber": "3528012345678901",
+        "checkIn": {"stationName": "Utrecht Centraal", "dateTime": "2026-10-12T08:15:00+02:00"},
+        "checkOut": {"stationName": "Amsterdam Centraal", "dateTime": "2026-10-12T09:02:00+02:00"},
+        "fareInCents": 940,
+        "product": "Dal Voordeel",
+        "operator": "NS",
+        "delayMinutes": 35,
+        "claimUrl": "/claim.html?ref=T1"
+      },
+      {
+        "id": "t2",
+        "cardNumber": "3528012345678901",
+        "checkIn": {"stationName": "Amsterdam Centraal", "dateTime": "2026-10-13T17:05:00+02:00"},
+        "checkOut": {"stationName": "Utrecht Centraal", "dateTime": "2026-10-13T17:52:00+02:00"},
+        "fareInCents": 940,
+        "product": "Dal Voordeel",
+        "operator": "NS",
+        "delayMinutes": 0
+      },
+      {
+        "id": "t3",
+        "cardNumber": "3528012345678901",
+        "checkIn": {"stationName": "Utrecht Centraal", "dateTime": "2025-12-01T10:00:00+01:00"},
+        "checkOut": {"stationName": "Rotterdam Centraal", "dateTime": "2025-12-01T10:41:00+01:00"},
+        "fareInCents": 1210,
+        "product": "Vol tarief",
+        "operator": "NS"
+      }
+    ]
+  }
+}

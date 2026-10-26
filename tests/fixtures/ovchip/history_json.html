@@ -1,0 +1,12 @@
+<!doctype html>
+<!-- SYNTHETIC: Reishistorie that only loads its data through a JSON XHR (no export, no table) -->
+<html lang="nl"><head><meta charset="utf-8"><title>Reishistorie</title></head>
+<body>
+<h1>Reishistorie</h1>
+<div id="out">Bezig met laden...</div>
+<script>
+fetch('/api/transactions?card=1111').then(r => r.json()).then(d => {
+  document.getElementById('out').textContent = d.transactions.length + ' transacties';
+});
+</script>
+</body></html>

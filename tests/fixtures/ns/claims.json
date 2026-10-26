@@ -1,0 +1,21 @@
+{
+  "_comment": "SYNTHETIC: plausible guess of a Mijn NS 'Mijn aanvragen' response.",
+  "aanvragen": [
+    {
+      "referentienummer": "GTB-2026-12345",
+      "status": "In behandeling",
+      "datum": "2026-10-12",
+      "van": "Utrecht Centraal",
+      "naar": "Amsterdam Centraal",
+      "bedrag": {"amount": 470, "currency": "EUR"}
+    },
+    {
+      "referentienummer": "GTB-2026-00077",
+      "status": "Uitbetaald",
+      "datum": "2026-09-02",
+      "van": "Utrecht Centraal",
+      "naar": "Rotterdam Centraal",
+      "bedrag": "€ 12,10"
+    }
+  ]
+}

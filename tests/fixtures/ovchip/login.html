@@ -1,0 +1,16 @@
+<!doctype html>
+<!-- SYNTHETIC: stand-in for login.ov-chipkaart.nl/authenticationendpoint/login.do (WSO2 IS) with its usual ids -->
+<html lang="nl"><head><meta charset="utf-8"><title>Inloggen - OV-chipkaart</title></head>
+<body>
+<h1>Inloggen</h1>
+<div id="error-msg" class="alert alert-danger" style="display:{error_display}">{error}</div>
+<form method="post" action="/authenticationendpoint/commonauth">
+  <label for="usernameUserInput">Gebruikersnaam</label>
+  <input type="text" id="usernameUserInput" name="username" autocomplete="username">
+  <label for="password">Wachtwoord</label>
+  <input type="password" id="password" name="password" autocomplete="current-password">
+  <label><input type="checkbox" id="chkRemember" name="chkRemember"> Onthoud mij</label>
+  <button type="submit">Inloggen</button>
+</form>
+<p><a href="/forgot">Wachtwoord vergeten?</a></p>
+</body></html>
