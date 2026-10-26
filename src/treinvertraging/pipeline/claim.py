@@ -379,6 +379,8 @@ async def _submit(job: _Job, submitter_list: Sequence[ClaimSubmitter], result: C
         return
     with session_scope() as s:
         claim = s.get(Claim, job.claim_id)
+        if claim.state not in (ClaimState.APPROVED.value, ClaimState.ELIGIBLE.value):
+            return  # changed under our feet (UI, other run): never submit from an unexpected state
         claim.state = ClaimState.SUBMITTING.value
         claim.attempts = (claim.attempts or 0) + 1
         claim.channel = submitter_list[0].channel
