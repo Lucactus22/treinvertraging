@@ -4,9 +4,10 @@
 
 - Aanbevolen: een **kleine VM** (Debian 12, 2 vCPU, 2 GB RAM, 10 GB schijf) met Docker CE. Dat is het robuust voor Chromium.
 - Alternatief: een **LXC-container** (Debian 12, *unprivileged*, `nesting=1,keyctl=1`) met Docker erin. Werkt, maar Chromium in LXC kan lastiger zijn (zie hieronder).
-- Installatie: `git clone`, `cp .env.example .env` (wachtwoorden invullen!), `docker compose up -d --build`.
-- Bijwerken: `git pull && docker compose up -d --build`.
-- Back-up: de mappen `./data` en `./config` (SQLite-database, browserprofielen, sleutel `secret.key`). Zonder `secret.key` zijn de opgeslagen wachtwoorden onleesbaar.
+- Installatie met **Portainer** (aanbevolen): *Stacks -> Add stack -> Repository*, zie [Portainer](#portainer-stack-from-github--ghcr). Er is geen token nodig (publieke repo).
+- Installatie zonder Portainer: `git clone`, `cp .env.example .env` (wachtwoorden invullen!), `docker compose up -d --build`.
+- Bijwerken: Portainer: *Pull and redeploy* (of GitOps-updates aan). Zonder Portainer: `git pull && docker compose up -d --build`.
+- Back-up: de volumes `treinvertraging-data` en `treinvertraging-config` (SQLite-database, browserprofielen, sleutel `secret.key`). Zonder `secret.key` zijn de opgeslagen wachtwoorden onleesbaar.
 - Zet poort 8080 (web) en 6080 (noVNC) **nooit** open naar het internet. Gebruik Tailscale of WireGuard voor toegang van buitenaf, en zet `BIND_ADDR` in `.env` op je LAN- of Tailscale-adres.
 
 ---
@@ -39,7 +40,7 @@ Neither port should ever be reachable from the internet. See [Remote access](#re
    systemctl enable --now docker
    ```
 
-3. Continue with [Install](#install).
+3. Continue with [Portainer](#portainer-stack-from-github--ghcr) or [Install](#install-plain-docker-compose).
 
 Why a VM: Chromium needs user namespaces, a large shared-memory area and (headed) a working X stack. All of that works out of the box in a full VM with its own kernel, and snapshots/backups through vzdump are simple.
 
@@ -50,7 +51,7 @@ Lighter on resources, but nested containers add moving parts.
 1. Download the template: *Storage -> CT Templates -> Templates -> debian-12-standard*.
 2. Create the CT: **unprivileged**, 2 vCPU, 2048 MB RAM, 512 MB swap, 10 GB disk. Under *Options -> Features* enable **Nesting** and **keyctl** (equivalent to `features: nesting=1,keyctl=1` in `/etc/pve/lxc/<id>.conf`).
 3. Start the CT and install Docker with the same commands as in Option A.
-4. Continue with [Install](#install).
+4. Continue with [Portainer](#portainer-stack-from-github--ghcr) or [Install](#install-plain-docker-compose).
 
 Notes for Chromium in LXC:
 
@@ -59,16 +60,57 @@ Notes for Chromium in LXC:
 - Newer Proxmox/kernel/AppArmor combinations occasionally block Chromium's sandbox inside nested containers. If the browser will not start and logs mention namespace or sandbox errors, the quickest fix is to run the stack in a VM (Option A) rather than loosening the LXC profile.
 - Disk: keep the CT on local-lvm/zfs, not on a network share; SQLite (WAL) does not like NFS/SMB.
 
-## Install
+## Portainer (stack from GitHub + GHCR)
+
+If you run Portainer on the Proxmox VM/CT you do not need a shell: deploy the stack straight from the public GitHub repository. A GitHub Actions workflow (`.github/workflows/docker.yml`) builds the image on every push to `main` and publishes it as `ghcr.io/lucactus22/treinvertraging:latest` (plus `:sha-<commit>` and `:<tag>` for `v*` tags). The compose file pulls that image, so the server never has to build anything.
+
+1. **Stacks -> Add stack**, name it `treinvertraging`.
+2. Build method **Repository**:
+   - Repository URL: `https://github.com/lucactus22/treinvertraging`
+   - Repository reference: `refs/heads/main`
+   - Compose path: `docker-compose.yml`
+   - Authentication: **off**. The repository is public, so no token is needed.
+3. **Environment variables** (use *Advanced mode* to paste them as `NAME=value` lines):
+
+   | Variable | Value |
+   |---|---|
+   | `WEB_PASSWORD` | **required**, password of the web UI (the stack will not deploy without it) |
+   | `VNC_PASSWORD` | password for noVNC (only the first 8 characters count); empty = generated once and printed in the container log |
+   | `PUBLIC_URL` | `http://<server-ip>:8080`, used in notification links |
+   | `APPRISE_URLS` | e.g. `tgram://BOT_TOKEN/CHAT_ID` or `ntfys://my-topic` (comma separated) |
+   | `CLAIM_MODE` | `approve` (default; every claim needs your tap in the UI). `dry_run` to only rehearse, `auto` later |
+   | `NS_API_KEY` | optional, key from the NS API portal for the arrivals archive |
+   | `BIND_ADDR` | optional, LAN or Tailscale IP to publish ports 8080/6080 on (default `0.0.0.0`) |
+   | `TAG` | optional, image tag (`latest`, `v0.1.0`, `sha-abc1234`); pin one to avoid surprise updates |
+
+   Everything else in `.env.example` (`WEB_USERNAME`, `RUN_WINDOW`, `IMAP_*`, ...) can be added the same way. Do not commit a `.env` file: the repository is public.
+4. **Deploy the stack.** The compose file needs Docker Compose >= 2.24 (the optional `env_file`); current Portainer releases bundle that.
+5. Open `http://<server-ip>:8080` (user `admin`, your `WEB_PASSWORD`) and `http://<server-ip>:6080/vnc.html`.
+
+**GHCR package visibility.** The first time the workflow pushes, GitHub creates the package as *private*. Make it public once so the server can pull it without credentials: GitHub -> your profile -> **Packages** -> `treinvertraging` -> **Package settings** -> *Danger zone* -> **Change visibility** -> Public. (If you prefer a private package, add a registry in Portainer: *Registries -> Add registry -> GitHub/Custom* with a personal access token that has `read:packages`.)
+
+**Updates.** In the stack, switch on **GitOps updates** (polling, e.g. every 5 minutes, with *Re-pull image* enabled) or press **Pull and redeploy** with *Re-pull image* ticked when you want a new version. Pushing to `main` publishes a new `:latest`; pinning `TAG` to a version gives you control instead. Database migrations run on container start.
+
+**Data and config** live in the named volumes `treinvertraging-data` (`/data`) and `treinvertraging-config` (`/config`); see [Backups](#backups). To keep them in a host directory instead (easier to back up and to edit selectors), edit the stack in Portainer's web editor and replace the volume lines with
+
+```yaml
+    volumes:
+      - /srv/treinvertraging/data:/data
+      - /srv/treinvertraging/config:/config
+```
+
+and delete the `volumes:` block at the bottom of the file (the container fixes the ownership of both directories on start). Note that editing the compose file in the web editor detaches it from the repository; with plain `docker compose` you can do the same with a `docker-compose.override.yml`.
+
+## Install (plain docker compose)
 
 On the VM/CT:
 
 ```bash
-git clone <your-repo-url> treinvertraging
+git clone https://github.com/lucactus22/treinvertraging.git treinvertraging
 cd treinvertraging
 cp .env.example .env
 nano .env          # set WEB_PASSWORD, VNC_PASSWORD, PUBLIC_URL, optional NS_API_KEY / APPRISE_URLS
-docker compose up -d --build
+docker compose up -d --build     # builds locally; `docker compose pull && docker compose up -d` uses the GHCR image
 docker compose logs -f
 ```
 
@@ -78,7 +120,7 @@ Checks:
 - `http://<server-ip>:8080/` asks for the Basic-auth credentials from `.env`.
 - `http://<server-ip>:6080/vnc.html` shows the noVNC page; connect with `VNC_PASSWORD` (only the first 8 characters count). If `VNC_PASSWORD` is empty, a random one is generated on first start and printed once in `docker compose logs`.
 
-First start: `./data` and `./config` are created next to `docker-compose.yml`. `./config` is seeded from `config.example/` when empty. The entrypoint changes ownership of both folders to the container's `app` user (uid/gid 1000), so don't be surprised when they appear owned by that uid on the host.
+First start: the named volumes `treinvertraging-data` and `treinvertraging-config` are created (see the Portainer section for host directories). `/config` is seeded per file from `config.example/` (`rules.yaml`, `settings.yaml`; existing files are never overwritten) and `/config/selectors/` gets reference copies `ns.yaml.example`, `ovchip.yaml.example`, `gtbv.yaml.example`. The entrypoint changes ownership of both folders to the container's `app` user (uid/gid 1000).
 
 Optional `.env` setting for the compose file: `BIND_ADDR` (default `0.0.0.0`). Set it to the server's LAN IP or Tailscale IP to publish ports 8080/6080 on that address only.
 
@@ -90,26 +132,35 @@ git pull
 docker compose up -d --build
 ```
 
-Database migrations run automatically on container start. Data and config live in `./data` and `./config` and survive rebuilds. Old images can be removed with `docker image prune`.
+Database migrations run automatically on container start. Data and config live in the volumes and survive rebuilds. Old images can be removed with `docker image prune`.
 
 ## Backups
 
-Everything stateful is in two folders next to `docker-compose.yml`:
+Everything stateful is in two volumes (named volumes by default, or the host directories you chose):
 
-| Path | Contents |
+| Volume / path | Contents |
 |---|---|
-| `./data` | `app.db` (SQLite), `secret.key` (encrypts stored passwords/IBAN: **back it up together with app.db**), `profiles/` (browser sessions), `debug/`, `rdt-cache/`, `calibration/` |
-| `./config` | `settings.yaml`, `rules.yaml`, `selectors.yaml` |
+| `treinvertraging-data` (`/data`) | `app.db` (SQLite), `secret.key` (encrypts stored passwords/IBAN: **back it up together with app.db**), `profiles/` (browser sessions), `debug/`, `rdt-cache/`, `calibration/` |
+| `treinvertraging-config` (`/config`) | `settings.yaml`, `rules.yaml`, `selectors/<site>.yaml` |
 
 Options:
 
 - **Proxmox:** schedule vzdump (*Datacenter -> Backup*) of the VM/CT. Use *Snapshot* mode; for a consistent SQLite copy, either stop the container briefly or rely on WAL recovery (it is crash-safe).
 - **Proxmox Backup Server:** same job, with a PBS storage target.
-- **File level:** `docker compose stop && tar czf backup-$(date +%F).tgz data config && docker compose start`.
+- **File level (named volumes):**
+
+  ```bash
+  docker stop treinvertraging
+  docker run --rm -v treinvertraging-data:/data -v treinvertraging-config:/config -v "$PWD":/backup alpine \
+    tar czf /backup/treinvertraging-$(date +%F).tgz /data /config
+  docker start treinvertraging
+  ```
+
+  With host directories: `tar czf backup.tgz data config` while the container is stopped.
 
 `data/calibration/` and `data/debug/` contain personal data (names, card numbers, IBAN). Do not put them in git or share them unredacted. The backup contains secrets too: store it somewhere private and encrypted.
 
-Restore: put `data/` and `config/` back, then `docker compose up -d`.
+Restore: extract the archive into the volumes (or host directories) while the container is stopped, then start it again. `docs/OPERATIONS.md` has the details.
 
 ## Remote access (Tailscale)
 
@@ -132,4 +183,4 @@ Note: Docker publishes ports by editing iptables directly, bypassing ufw/firewal
 - `docker compose logs -f` shows all processes (Xvfb, x11vnc, noVNC, app) with their output.
 - Container "unhealthy": the app on :8080 is not up yet or crashed; look at the `app` lines in the logs.
 - Chromium crashes: check `/dev/shm` size (see LXC notes) and free RAM.
-- Forgot the generated VNC password: set `VNC_PASSWORD` in `.env` and run `docker compose up -d` (the password file is rewritten on every start).
+- Forgot the generated VNC password: set `VNC_PASSWORD` (in `.env` or the Portainer stack) and redeploy (the password file is rewritten on every start).

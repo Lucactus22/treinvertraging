@@ -98,7 +98,9 @@ def test_test_login_and_calibrate_stub_show_flash(client: TestClient, monkeypatc
     async def not_implemented(*args, **kwargs):
         raise NotImplementedError("stub")
 
-    monkeypatch.setattr(services, "test_login", not_implemented)  # WP-G implemented it; UI must still cope
+    # both are implemented now; the UI must still cope with a NotImplementedError (and open no real browser)
+    monkeypatch.setattr(services, "test_login", not_implemented)
+    monkeypatch.setattr(services, "start_calibration", not_implemented)
     client.post("/accounts", data=FORM)
     (acc,) = _accounts()
     r = client.post(f"/accounts/{acc.id}/test-login")
