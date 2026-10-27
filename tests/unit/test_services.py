@@ -117,8 +117,8 @@ async def test_test_login_and_calibration(fake_env):
     assert await services.test_login(acc) == "Ingelogd bij 'Mijn NS'."
     with pytest.raises(LookupError):
         await services.test_login(999)
-    with pytest.raises(NotImplementedError):
-        await services.start_calibration(acc, "ns")
+    with pytest.raises(ValueError):
+        await services.start_calibration(acc, "bogus")
 
 
 async def test_next_runs_empty_without_scheduler(env):  # noqa: F811

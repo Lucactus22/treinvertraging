@@ -24,6 +24,9 @@ state is committed as ``submitting`` *before* the submitter is called)
        provably did not submit (login required, takeover timeout, ``ok=False`` without final submit) ->
        back to ``approved`` while ``attempts < 3``, else ``needs_human``; anything unexpected, or a
        failure *after* the final submit -> stays ``submitting`` for ``reconcile`` to resolve.
+    4. as soon as an attempt reached the final submit button an event ``claim.final_submit_clicked`` is
+       written. Reconcile never rolls such a claim back to ``approved``: after 24 hours without
+       confirmation it becomes ``needs_human`` (a human checks Mijn NS / the mailbox).
 
 At most ``max_per_run`` (5) claims are processed per run, most urgent deadline first, with a random
 pause (``jitter()``) between them.
@@ -57,7 +60,9 @@ from treinvertraging.errors import (
 )
 from treinvertraging.models import Account, Assessment, Claim, Event, Trip
 from treinvertraging.pipeline.context import (
+    FINAL_SUBMIT_EVENT,
     MAX_ATTEMPTS,
+    SUBMITTING_EVENT,
     ClaimantIncomplete,
     add_event,
     claimant_for,
@@ -386,9 +391,22 @@ async def _submit(job: _Job, submitter_list: Sequence[ClaimSubmitter], result: C
         claim.channel = submitter_list[0].channel
         claim.last_error = None
         attempts = claim.attempts
-        add_event(s, "claim.submitting", f"{job.label} (attempt {attempts})", trip_key=job.trip_key)
+        add_event(s, SUBMITTING_EVENT, f"{job.label} (attempt {attempts})", trip_key=job.trip_key)
 
     res, err, debug_dir, _exhausted = await _attempt(job, submitter_list, dry_run=False)
+
+    if (res is not None and res.reached_final_submit) or (err is not None and _reached_final(err)):
+        # Persist this first: from here on the claim may exist at NS and must never be re-queued
+        # automatically (reconcile hands it to a human instead of rolling it back to ``approved``).
+        with session_scope() as s:
+            channel = res.channel if res is not None else s.get(Claim, job.claim_id).channel
+            add_event(
+                s,
+                FINAL_SUBMIT_EVENT,
+                f"{job.label}: final submit clicked via {channel}",
+                level="warning",
+                trip_key=job.trip_key,
+            )
 
     if res is not None and res.ok:
         _set_claim(

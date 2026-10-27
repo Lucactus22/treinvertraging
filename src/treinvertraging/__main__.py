@@ -6,6 +6,7 @@ import asyncio
 import logging
 import signal
 from collections.abc import Awaitable, Callable
+from pathlib import Path
 from typing import Annotated
 
 import typer
@@ -16,10 +17,6 @@ from treinvertraging.domain import Source
 app = typer.Typer(help="Self-hosted 'geld terug bij vertraging' bot.", no_args_is_help=True)
 account_app = typer.Typer(help="Manage NS / OV-chipkaart accounts.", no_args_is_help=True)
 app.add_typer(account_app, name="account")
-
-
-def _not_implemented() -> None:
-    typer.echo("not implemented yet")
 
 
 @app.callback()
@@ -188,19 +185,96 @@ def canary() -> None:
         raise typer.Exit(1)
 
 
+def _headed_runtime() -> None:
+    """Interactive commands need a visible browser (noVNC), whatever HEADLESS says."""
+    from treinvertraging.browser.runtime import BrowserRuntime, set_runtime
+
+    set_runtime(BrowserRuntime(headless=False))
+
+
 @app.command()
 def calibrate(
-    channel: Annotated[str | None, typer.Option(help="Channel to calibrate, e.g. gtbv.")] = None,
-    redact: Annotated[bool, typer.Option(help="Mask personal data in the output.")] = False,
+    account: Annotated[int | None, typer.Option("--account", help="Account id (see `account list`).")] = None,
+    channel: Annotated[str | None, typer.Option(help="ns, ovchip or gtbv.")] = None,
+    redact: Annotated[
+        Path | None,
+        typer.Option(
+            "--redact",
+            help="Write a redacted copy of the calibration output to this directory "
+            "(without --account/--channel: only redact what was recorded before).",
+        ),
+    ] = None,
 ) -> None:
-    """Record real pages and API calls to lock in selectors and endpoints."""
-    _not_implemented()
+    """Record real pages and API calls (headed, step by step) to lock in selectors and endpoints.
+
+    You navigate in noVNC and press Enter per step. Nothing is ever submitted.
+    """
+    from treinvertraging import calibration
+
+    if channel is not None and channel not in calibration.CHANNELS:
+        typer.echo(f"error: --channel must be one of {', '.join(calibration.CHANNELS)}", err=True)
+        raise typer.Exit(2)
+    # --redact without --account only redacts what was recorded before
+    run = account is not None or (redact is None and channel is not None)
+    if not run and redact is None:
+        typer.echo("error: give --account and --channel to record, and/or --redact OUT_DIR", err=True)
+        raise typer.Exit(2)
+    if run and channel is None:
+        typer.echo("error: --channel is required (ns, ovchip or gtbv)", err=True)
+        raise typer.Exit(2)
+    if run and account is None and channel != "gtbv":
+        typer.echo(f"error: --account is required for channel {channel}", err=True)
+        raise typer.Exit(2)
+    if run:
+        assert channel is not None
+        _headed_runtime()
+
+        async def go() -> str:
+            result = await calibration.run_calibration(
+                account, channel, confirm=calibration.console_confirm()
+            )
+            return result.summary()
+
+        typer.echo(_run(go))
+    if redact is not None:
+        _redact_calibration(redact, channel)
+
+
+def _redact_calibration(out_dir: Path, channel: str | None) -> None:
+    from treinvertraging import calibration
+
+    src = calibration.calibration_root() / channel if channel else calibration.calibration_root()
+    try:
+        names = calibration.account_name_terms()
+    except Exception:  # noqa: BLE001 - redaction still works without the account names
+        names = []
+    try:
+        skipped = calibration.redact_tree(src, out_dir, extra_terms=names)
+    except (FileNotFoundError, ValueError) as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(1) from exc
+    typer.echo(f"redacted copy written to {out_dir} ({len(skipped)} file(s) skipped, see README.md there)")
+    typer.echo("Screenshots and trace.zip were NOT copied: they contain personal data.")
 
 
 @app.command()
-def login(account_id: Annotated[int | None, typer.Argument(help="Account id.")] = None) -> None:
-    """Log in interactively (stores the persistent browser session)."""
-    _not_implemented()
+def login(
+    account: Annotated[int | None, typer.Option("--account", help="Account id (see `account list`).")] = None,
+    account_id: Annotated[int | None, typer.Argument(help="Account id (alternative to --account).")] = None,
+) -> None:
+    """Log in (headed) so the persistent browser profile of the account is primed.
+
+    Uses the normal automatic login; if the site blocks it, a takeover is requested (open noVNC,
+    log in by hand, then press Klaar in the web UI).
+    """
+    from treinvertraging import services
+
+    acc_id = account if account is not None else account_id
+    if acc_id is None:
+        typer.echo("error: give --account <id> (see `treinvertraging account list`)", err=True)
+        raise typer.Exit(2)
+    _headed_runtime()
+    typer.echo(_run(lambda: services.test_login(acc_id)))
 
 
 @account_app.command("add")

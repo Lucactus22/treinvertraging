@@ -163,7 +163,10 @@ async def retry_claim(claim_id: int) -> str:
 
 
 async def test_login(account_id: int) -> str:
-    """Try ``ensure_logged_in`` for the account. Returns a message; raises on failure."""
+    """Try ``ensure_logged_in`` for the account (primes the persistent profile). Returns a message.
+
+    Raises on failure (``LoginRequired``, ``BlockedByBotProtection``, ...); unknown id -> ``LookupError``.
+    """
     from treinvertraging.adapters import registry
     from treinvertraging.models import Account
 
@@ -177,11 +180,21 @@ async def test_login(account_id: int) -> str:
 
 
 async def start_calibration(account_id: int, channel: str) -> str:
-    """Start the calibration walkthrough for an account (``ns``, ``ovchip`` or ``gtbv``).
+    """Run the calibration walkthrough for an account (``ns``, ``ovchip`` or ``gtbv``).
 
-    Not implemented yet: WP-J wires this to the adapters' ``calibrate()`` methods.
+    Every step is a human takeover ("Kalibratie stap X: ga naar ..., klik Klaar"): open noVNC, navigate,
+    press "Klaar" in the web UI. Artefacts go to ``<DATA_DIR>/calibration/<channel>/``. Raises
+    ``ValueError`` (unknown channel / wrong account type), ``LookupError`` (unknown account).
     """
-    raise NotImplementedError("services.start_calibration is wired up by WP-J")
+    from treinvertraging import calibration
+
+    if channel not in calibration.CHANNELS:
+        raise ValueError(f"unknown channel {channel!r}")
+    _, label = calibration.resolve_account(account_id, channel)  # validates before any browser starts
+    result = await calibration.run_calibration(
+        account_id, channel, confirm=calibration.takeover_confirm(f"kalibratie {label}")
+    )
+    return result.summary()
 
 
 # ---------------------------------------------------------------------------

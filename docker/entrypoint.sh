@@ -30,11 +30,32 @@ if [ "$(id -u)" = "0" ]; then
     chown -R app:app "$DATA_DIR"
 fi
 
-# Seed /config from config.example when empty (never overwrite existing files).
-if [ -z "$(ls -A "$CONFIG_DIR" 2>/dev/null)" ]; then
-    echo "[entrypoint] /config is empty, seeding from /app/config.example"
-    cp -a /app/config.example/. "$CONFIG_DIR"/
-    [ "$(id -u)" = "0" ] && chown -R app:app "$CONFIG_DIR"
+# Seed /config. Per file and never overwriting: a file you created or edited is left alone, a missing
+# one (e.g. rules.yaml after you deleted it, or a file added by a newer image) is copied from the image.
+seed_file() { # seed_file SRC DST
+    if [ ! -e "$2" ]; then
+        echo "[entrypoint] seeding $2"
+        cp "$1" "$2"
+    fi
+}
+for f in /app/config.example/*; do
+    [ -f "$f" ] && seed_file "$f" "$CONFIG_DIR/$(basename "$f")"
+done
+
+# Selectors: the bundled defaults are always used; a file in /config/selectors/<site>.yaml is deep-merged
+# over them. Show the user what can be overridden by dropping reference copies next to it. The
+# `*.yaml.example` copies are refreshed on every start (they track the image); `*.yaml` is never touched.
+mkdir -p "$CONFIG_DIR/selectors"
+SELECTOR_DEFAULTS="$(python -c 'from treinvertraging.selectors import DEFAULTS_DIR; print(DEFAULTS_DIR)' 2>/dev/null || true)"
+if [ -n "$SELECTOR_DEFAULTS" ] && [ -d "$SELECTOR_DEFAULTS" ]; then
+    for f in "$SELECTOR_DEFAULTS"/*.yaml; do
+        [ -f "$f" ] && cp -f "$f" "$CONFIG_DIR/selectors/$(basename "$f").example"
+    done
+else
+    echo "[entrypoint] warning: could not locate the bundled selector defaults"
+fi
+if [ "$(id -u)" = "0" ]; then
+    chown -R app:app "$CONFIG_DIR"
 fi
 
 # VNC password for x11vnc (noVNC takeover). Generate one if not supplied and print it once.

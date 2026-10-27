@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
 from typer.testing import CliRunner
 
 from treinvertraging.__main__ import app
@@ -15,13 +14,6 @@ def test_help_lists_commands() -> None:
     assert result.exit_code == 0
     for cmd in ("serve", "sync", "assess", "claim", "canary", "calibrate", "login", "account"):
         assert cmd in result.output
-
-
-@pytest.mark.parametrize("cmd", ["calibrate", "login"])  # still stubs; wired up by WP-J
-def test_stubs(cmd: str) -> None:
-    result = runner.invoke(app, [cmd])
-    assert result.exit_code == 0
-    assert "not implemented yet" in result.output
 
 
 def test_account_help() -> None:

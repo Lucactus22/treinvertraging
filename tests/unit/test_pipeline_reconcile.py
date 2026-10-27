@@ -16,8 +16,8 @@ from tests.unit.pipeline_support import (
 )
 from treinvertraging import db
 from treinvertraging.adapters.fake import FakeStatusReader, FakeSubmitter
-from treinvertraging.domain import ClaimState
-from treinvertraging.models import Claim
+from treinvertraging.domain import ClaimState, SubmitResult
+from treinvertraging.models import Claim, Event
 from treinvertraging.otp.imap import parse_message
 from treinvertraging.pipeline import claim, reconcile
 
@@ -223,3 +223,112 @@ def test_parsers():
     assert reconcile.status_from_text("Je aanvraag is afgewezen") == E.REJECTED
     assert reconcile.status_from_text("In behandeling") == E.CONFIRMED
     assert reconcile.mail_reference("Je referentienummer is GTBV-2026-445566.") == "GTBV-2026-445566"
+
+
+# ---- never double-submit: a claim whose final submit button was clicked is never re-queued ---------
+
+
+def age_claim(claim_id: int, hours: int) -> None:
+    with db.session_scope() as s:
+        s.get(Claim, claim_id).updated_at = datetime.now(UTC) - timedelta(hours=hours)
+
+
+def final_clicked_result(ok: bool = False) -> SubmitResult:
+    return SubmitResult(
+        ok=ok,
+        reference=None,
+        screenshot=None,
+        message="submit clicked, no confirmation page",
+        channel="gtbv",
+        reached_final_submit=True,
+    )
+
+
+async def test_final_submit_without_confirmation_is_never_rolled_back_to_approved(env):  # noqa: F811
+    acc = add_account()
+    cid, key = seed_claim(E.APPROVED, account_id=acc)
+    gtbv = FakeSubmitter("gtbv", outcomes=[final_clicked_result()])
+    res = await claim.run_claim(submitters=[gtbv], today=TODAY, sleep=no_sleep)
+    assert res.unresolved == 1 and claim_row(cid).state == E.SUBMITTING.value
+    assert [e.trip_key for e in events("claim.final_submit_clicked")] == [key]
+
+    # within 24h: left alone
+    out = await reconcile.run_reconcile(readers=[FakeStatusReader([])], mail_provider=None)
+    assert out.rolled_back == 0 and claim_row(cid).state == E.SUBMITTING.value
+
+    # after 24h with nothing found: needs_human + notification, NOT approved
+    age_claim(cid, 25)
+    out = await reconcile.run_reconcile(readers=[FakeStatusReader([])], mail_provider=None)
+    assert out.rolled_back == 0 and out.needs_human == 1
+    row = claim_row(cid)
+    assert row.state == E.NEEDS_HUMAN.value and "bevestigd" in row.last_error
+    assert "Claim niet bevestigd" in env.titles()
+    assert "Mijn NS" in env.sent[-1]["body"] and "mail" in env.sent[-1]["body"]
+    assert events("reconcile.unconfirmed_final_submit")
+
+    # and no later claim run submits it again, in any mode
+    for mode in ("auto", "approve"):
+        await claim.run_claim(submitters=[gtbv], today=TODAY, sleep=no_sleep, mode=mode)
+    assert len(gtbv.calls) == 1
+
+
+async def test_final_submit_exception_flag_is_persisted_too(env):  # noqa: F811
+    acc = add_account()
+    cid, _ = seed_claim(E.APPROVED, account_id=acc)
+    exc = RuntimeError("browser died right after the click")
+    exc.reached_final_submit = True
+    await claim.run_claim(submitters=[FakeSubmitter("gtbv", always=exc)], today=TODAY, sleep=no_sleep)
+    assert claim_row(cid).state == E.SUBMITTING.value and len(events("claim.final_submit_clicked")) == 1
+    age_claim(cid, 40)
+    await reconcile.run_reconcile(readers=[FakeStatusReader([])], mail_provider=None)
+    assert claim_row(cid).state == E.NEEDS_HUMAN.value
+
+
+async def test_final_submit_goes_to_needs_human_even_when_no_source_is_reachable(env):  # noqa: F811
+    acc = add_account()
+    cid, _ = seed_claim(E.SUBMITTING, account_id=acc, attempts=1, updated_ago=30 * H, final_submit_event=True)
+    res = await reconcile.run_reconcile(
+        readers=[FakeStatusReader(error=RuntimeError("login failed"))], mail_provider=None
+    )
+    assert res.sources_ok == 0 and res.rolled_back == 0
+    assert claim_row(cid).state == E.NEEDS_HUMAN.value
+
+
+async def test_final_submit_claim_with_attempts_left_still_not_rolled_back(env):  # noqa: F811
+    """attempts=1 would normally mean 'back to approved'; the final-submit flag overrides that."""
+    acc = add_account()
+    cid, _ = seed_claim(E.SUBMITTING, account_id=acc, attempts=1, updated_ago=30 * H, final_submit_event=True)
+    await reconcile.run_reconcile(readers=[FakeStatusReader([])], mail_provider=None)
+    assert claim_row(cid).state == E.NEEDS_HUMAN.value and claim_row(cid).attempts == 1
+
+
+async def test_needs_human_final_submit_claim_is_still_confirmed_when_it_shows_up(env):  # noqa: F811
+    acc = add_account()
+    cid, _ = seed_claim(E.NEEDS_HUMAN, account_id=acc, attempts=1, final_submit_event=True)
+    reader = FakeStatusReader([rec(reference="CL-2002", status="In behandeling")])
+    res = await reconcile.run_reconcile(readers=[reader], mail_provider=None)
+    assert res.confirmed == 1
+    row = claim_row(cid)
+    assert row.state == E.CONFIRMED.value and row.reference == "CL-2002" and row.last_error is None
+
+
+async def test_plain_needs_human_claim_is_not_watched_and_new_attempt_resets_the_flag(env):  # noqa: F811
+    acc = add_account()
+    seed_claim(E.NEEDS_HUMAN, account_id=acc)  # no final submit: not under observation
+    reader = FakeStatusReader([])
+    res = await reconcile.run_reconcile(readers=[reader], mail_provider=None)
+    assert res.checked == 0 and reader.calls == []
+
+    # an old final-submit flag followed by a NEW attempt ('claim.submitting') no longer protects the claim
+    cid, key = seed_claim(
+        E.SUBMITTING,
+        account_id=acc,
+        trip=make_trip(day=date(2026, 10, 21)),
+        attempts=2,
+        updated_ago=30 * H,
+        final_submit_event=True,
+    )
+    with db.session_scope() as s:
+        s.add(Event(kind="claim.submitting", message="second attempt", trip_key=key))
+    await reconcile.run_reconcile(readers=[FakeStatusReader([])], mail_provider=None)
+    assert claim_row(cid).state == E.APPROVED.value

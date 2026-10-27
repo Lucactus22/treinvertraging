@@ -17,7 +17,7 @@ from datetime import UTC, date, datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from treinvertraging import crypto
@@ -32,6 +32,11 @@ log = logging.getLogger(__name__)
 
 # Claim policy / retry constants shared by claim.py and reconcile.py.
 MAX_ATTEMPTS = 3
+
+# Audit event written as soon as an attempt clicked the final submit button of a claim form. From then
+# on the claim may exist at NS, so it must never be rolled back to ``approved`` automatically.
+FINAL_SUBMIT_EVENT = "claim.final_submit_clicked"
+SUBMITTING_EVENT = "claim.submitting"
 
 
 class ClaimantIncomplete(ValueError):
@@ -70,6 +75,23 @@ def add_event(
     session: Session, kind: str, message: str, *, level: str = "info", trip_key: str | None = None
 ) -> None:
     session.add(Event(level=level, kind=kind, message=message[:2000], trip_key=trip_key))
+
+
+def final_submit_clicked(session: Session, trip_key: str) -> bool:
+    """True when the LAST submit attempt of this trip's claim clicked the final submit button.
+
+    Derived from the audit log (no schema change): a ``claim.final_submit_clicked`` event that is newer
+    than the latest ``claim.submitting`` event (a new attempt starts with ``claim.submitting``).
+    """
+    last_final = session.scalar(
+        select(func.max(Event.id)).where(Event.trip_key == trip_key, Event.kind == FINAL_SUBMIT_EVENT)
+    )
+    if last_final is None:
+        return False
+    last_start = session.scalar(
+        select(func.max(Event.id)).where(Event.trip_key == trip_key, Event.kind == SUBMITTING_EVENT)
+    )
+    return last_start is None or last_final > last_start
 
 
 def log_event(kind: str, message: str, *, level: str = "info", trip_key: str | None = None) -> None:

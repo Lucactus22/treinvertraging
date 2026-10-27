@@ -179,6 +179,7 @@ def seed_claim(
     submitted_ago: timedelta | None = None,
     approved_event: bool = False,
     reference: str | None = None,
+    final_submit_event: bool = False,
 ) -> tuple[int, str]:
     """Insert trip + eligible assessment + claim directly in ``state``. Returns (claim_id, trip_key)."""
     trip = trip or make_trip()
@@ -233,6 +234,9 @@ def seed_claim(
         s.flush()
         if approved_event:
             s.add(Event(kind="claim.approved", message="seed", trip_key=key))
+        if final_submit_event:
+            s.add(Event(kind="claim.submitting", message="seed", trip_key=key))
+            s.add(Event(kind="claim.final_submit_clicked", message="seed", trip_key=key))
         return claim.id, key
 
 

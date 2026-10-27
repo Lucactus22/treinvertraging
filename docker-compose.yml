@@ -1,20 +1,64 @@
+# Works with plain `docker compose` and as a Portainer stack (Stacks -> Add stack -> Repository).
+#
+#   * Portainer / production: the image comes from GHCR (ghcr.io/lucactus22/treinvertraging:${TAG}).
+#     Set the variables below in Portainer's "Environment variables" editor.
+#   * Local build:  docker compose up -d --build     (uses `build: .`, tags the image with the same name)
+#   * Plain compose: copy .env.example to .env and edit it (optional: the file may be absent).
+#
+# Data lives in named volumes. To use a host directory instead, replace the volume lines, e.g.
+#       - /srv/treinvertraging/data:/data
+#       - /srv/treinvertraging/config:/config
+# (the container fixes the ownership of both directories on start) and delete the `volumes:` block at the bottom.
 services:
   treinvertraging:
+    image: ghcr.io/lucactus22/treinvertraging:${TAG:-latest}
     build: .
-    image: treinvertraging:latest
     container_name: treinvertraging
     restart: unless-stopped
     init: true
     shm_size: 1gb # Chromium needs a large /dev/shm
-    env_file: .env
+    env_file:
+      - path: .env
+        required: false
     environment:
-      TZ: Europe/Amsterdam
+      TZ: ${TZ:-Europe/Amsterdam}
+      # --- required -----------------------------------------------------------------------------
+      WEB_PASSWORD: ${WEB_PASSWORD:?Set WEB_PASSWORD (HTTP Basic auth password of the web UI)}
+      # --- web UI / links -----------------------------------------------------------------------
+      WEB_USERNAME: ${WEB_USERNAME:-admin}
+      PUBLIC_URL: ${PUBLIC_URL:-http://localhost:8080} # used in notification links, e.g. http://192.168.1.50:8080
+      VNC_PASSWORD: ${VNC_PASSWORD:-} # noVNC (6080); empty = generated once and printed in the log
+      # --- claiming -----------------------------------------------------------------------------
+      CLAIM_MODE: ${CLAIM_MODE:-approve} # dry_run | approve | auto
+      AUTO_AFTER_N_APPROVED: ${AUTO_AFTER_N_APPROVED:-5}
+      SUBMIT_CHANNELS: ${SUBMIT_CHANNELS:-gtbv,mijnns}
+      TIMEZONE: ${TIMEZONE:-Europe/Amsterdam}
+      RUN_WINDOW: ${RUN_WINDOW:-07:00-22:00}
+      HEADLESS: ${HEADLESS:-false} # false = headed Chromium in Xvfb (recommended against bot protection)
+      # --- notifications and delay data ---------------------------------------------------------
+      APPRISE_URLS: ${APPRISE_URLS:-} # e.g. tgram://BOT_TOKEN/CHAT_ID,ntfys://my-topic
+      NS_API_KEY: ${NS_API_KEY:-} # optional NS API portal key (arrivals archive)
+      ARCHIVE_EXTRA_STATIONS: ${ARCHIVE_EXTRA_STATIONS:-}
+      ARCHIVE_TOP_N: ${ARCHIVE_TOP_N:-10}
+      # --- optional mailbox for verification codes and confirmation mails ----------------------
+      IMAP_HOST: ${IMAP_HOST:-}
+      IMAP_PORT: ${IMAP_PORT:-993}
+      IMAP_USER: ${IMAP_USER:-}
+      IMAP_PASSWORD: ${IMAP_PASSWORD:-}
+      IMAP_FOLDER: ${IMAP_FOLDER:-INBOX}
+      # --- fixed paths inside the container (leave as is) ---------------------------------------
+      DATA_DIR: /data
+      CONFIG_DIR: /config
     volumes:
-      - ./data:/data
-      - ./config:/config
+      - treinvertraging-data:/data
+      - treinvertraging-config:/config
     ports:
       # 8080 = web UI (HTTP Basic auth), 6080 = noVNC (live browser / human takeover).
       # Do NOT expose these to the internet. Bind to your LAN address or Tailscale IP via
-      # BIND_ADDR in .env (e.g. BIND_ADDR=192.168.1.50 or your 100.x.y.z Tailscale address).
+      # BIND_ADDR (e.g. BIND_ADDR=192.168.1.50 or your 100.x.y.z Tailscale address).
       - "${BIND_ADDR:-0.0.0.0}:8080:8080"
       - "${BIND_ADDR:-0.0.0.0}:6080:6080"
+
+volumes:
+  treinvertraging-data:
+  treinvertraging-config:

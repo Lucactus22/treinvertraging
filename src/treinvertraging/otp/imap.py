@@ -72,6 +72,8 @@ class ImapConfig:
             host, user, password = e[f"{prefix}HOST"], e[f"{prefix}USER"], e[f"{prefix}PASSWORD"]
         except KeyError as ex:
             raise ValueError(f"IMAP not configured: missing {ex.args[0]}") from None
+        if not (host.strip() and user.strip() and password):  # empty values (compose passes them) = unset
+            raise ValueError("IMAP not configured: empty host, user or password")
         m: dict[str, Any] = {"host": host, "user": user, "password": password}
         for key, name in (
             ("port", "PORT"),

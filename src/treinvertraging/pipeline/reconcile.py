@@ -23,6 +23,11 @@ Status record format (``ClaimStatusReader.list_submitted_claims`` returns ``list
     -> ``rejected``; anything else found -> ``confirmed``. States only move forward.
 
 Stale ``submitting`` claims
+    A claim whose last attempt clicked the final submit button (event ``claim.final_submit_clicked``) is
+    NEVER rolled back: after 24 hours without confirmation it becomes ``needs_human`` with a notification
+    ("controleer in Mijn NS / je mail of deze claim binnenkwam"). Such a claim stays under observation
+    (also in ``needs_human``), so a later sighting in Mijn NS / the mailbox still confirms it.
+
     A claim in ``submitting`` that no source knows and that has not changed for 24 hours goes back to
     ``approved`` (it will be submitted again by the next claim run), or to ``needs_human`` after
     ``MAX_ATTEMPTS`` (3). ``attempts`` was already incremented when the claim entered ``submitting``.
@@ -52,6 +57,7 @@ from treinvertraging.pipeline.context import (
     MAX_ATTEMPTS,
     add_event,
     as_utc,
+    final_submit_clicked,
     load_imap_config,
     local_tz,
     short_error,
@@ -276,6 +282,8 @@ def _apply(
         return changed
     old = claim.state
     claim.state = new
+    if old == ClaimState.NEEDS_HUMAN.value:
+        claim.last_error = None  # found after all
     changed = True
     if new == ClaimState.PAID.value:
         claim.paid_eur = rec.amount if rec.amount is not None else claim.expected_eur
@@ -322,6 +330,16 @@ async def run_reconcile(
             for c, t in s.execute(
                 select(Claim, Trip).join(Trip, Trip.key == Claim.trip_key).where(Claim.state.in_(_PENDING))
             ).all()
+        ]
+        # needs_human claims that did click the final submit stay under observation (see docstring)
+        pairs += [
+            (c, t)
+            for c, t in s.execute(
+                select(Claim, Trip)
+                .join(Trip, Trip.key == Claim.trip_key)
+                .where(Claim.state == ClaimState.NEEDS_HUMAN.value)
+            ).all()
+            if as_utc(c.updated_at) >= now - timedelta(days=100) and final_submit_clicked(s, c.trip_key)
         ]
         accounts = list(s.scalars(select(Account).where(Account.enabled.is_(True)).order_by(Account.id)))
         imap_cfg = load_imap_config(s) if mail_provider is _AUTO else None
@@ -379,7 +397,8 @@ async def run_reconcile(
         unconfirmed = [
             (c, t)
             for c, t in live_pairs
-            if c.state in (ClaimState.SUBMITTING.value, ClaimState.SUBMITTED.value)
+            if c.state
+            in (ClaimState.SUBMITTING.value, ClaimState.SUBMITTED.value, ClaimState.NEEDS_HUMAN.value)
         ]
         used: set[int] = set()
         for mail, text in sorted(mail_records, key=lambda x: x[0].date or now):
@@ -407,6 +426,29 @@ async def run_reconcile(
             if claim.state != ClaimState.SUBMITTING.value:
                 continue
             if now - as_utc(claim.updated_at) < stale_after:
+                continue
+            if final_submit_clicked(s, claim.trip_key):
+                # the final button was clicked: the claim may well exist at NS. Never auto-retry.
+                claim.state = ClaimState.NEEDS_HUMAN.value
+                claim.last_error = "ingediend maar niet bevestigd; controleer of NS de claim ontving"
+                result.needs_human += 1
+                add_event(
+                    s,
+                    "reconcile.unconfirmed_final_submit",
+                    f"final submit clicked, no confirmation after {stale_after}; needs a human "
+                    f"(sources reachable: {result.sources_ok})",
+                    level="error",
+                    trip_key=claim.trip_key,
+                )
+                notices.append(
+                    (
+                        "Claim niet bevestigd",
+                        f"Claim #{claim.id} is >24 uur geleden ingediend maar nergens teruggevonden. "
+                        "Controleer in Mijn NS / je mail of deze claim binnenkwam. Dien hem NIET opnieuw "
+                        "in zolang je dat niet zeker weet (dubbele claims).",
+                        "error",
+                    )
+                )
                 continue
             if result.sources_ok == 0:
                 add_event(
